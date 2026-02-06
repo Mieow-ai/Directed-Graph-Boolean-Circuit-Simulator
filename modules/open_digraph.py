@@ -138,3 +138,13 @@ class open_digraph: # for open directed graph
     def add_edges(self, edges):
         for src, tgt in edges:
             self.add_edge(src, tgt)
+            
+    def add_node(self, label='', parents=None, children=None):
+        new_id = self.new_id()
+        if parents is None:
+            parents = {}
+        if children is None:
+            children = {}
+        new_node = node(new_id, label, parents, children)
+        self.nodes[new_id] = new_node
+        return new_id

@@ -20,6 +20,18 @@ class InitTest(unittest.TestCase):
         self.assertEqual(self.n0.children, {1:1})
         self.assertIsInstance(self.n0, node)
         self.assertIsNot(self.n0.copy(), self.n0)
+        
+    def test_add_node(self):
+        self.g.add_node('b', {0:1}, {2:1})
+        self.assertEqual(self.g.nodes[3].get_id(), 3)
+        self.assertEqual(self.g.nodes[3].get_label(), 'b')
+        self.assertEqual(self.g.nodes[3].get_parents(), {0:1})
+        self.assertEqual(self.g.nodes[3].get_children(), {2:1})
+        self.g.add_node('c')
+        self.assertEqual(self.g.nodes[4].get_id(), 4)
+        self.assertEqual(self.g.nodes[4].get_label(), 'c')
+        self.assertEqual(self.g.nodes[4].get_parents(), {})
+        self.assertEqual(self.g.nodes[4].get_children(), {})
     
     def test_init_open_digraph(self):
         self.assertEqual(self.g.inputs, [0])
