@@ -57,6 +57,42 @@ class node:
             self.parents[parent_id] += multiplicity
         else:
             self.parents[parent_id] = multiplicity
+            
+    # methods
+    
+    def remove_parent_once(self, parent_id):
+        if parent_id in self.parents:
+            if self.parents[parent_id] > 1:
+                self.parents[parent_id] -= 1
+            elif self.parents[parent_id] == 0:
+                raise ValueError(f"Parent_id {parent_id} a une multiplicité nulle dans node {self.id}")
+            else:
+                del self.parents[parent_id]
+        else:
+            raise ValueError(f"Parent_id {parent_id} pas dans node {self.id}")
+        
+    def remove_child_once(self, child_id):
+        if child_id in self.children:
+            if self.children[child_id] > 1:
+                self.children[child_id] -= 1
+            elif self.children[child_id] == 0:
+                raise ValueError(f"Child_id {child_id} a une multiplicité nulle dans node {self.id}")
+            else:
+                del self.children[child_id]
+        else:
+            raise ValueError(f"Child_id {child_id} pas dans node {self.id}")
+        
+    def remove_parent_id(self, parent_id):
+        if parent_id in self.parents:
+            del self.parents[parent_id]
+        else:
+            raise ValueError(f"Parent_id {parent_id} pas dans node {self.id}")
+    
+    def remove_child_id(self, child_id):
+        if child_id in self.children:
+            del self.children[child_id]
+        else:
+            raise ValueError(f"Child_id {child_id} pas dans node {self.id}")
 
     
 
@@ -148,3 +184,5 @@ class open_digraph: # for open directed graph
         new_node = node(new_id, label, parents, children)
         self.nodes[new_id] = new_node
         return new_id
+    
+    

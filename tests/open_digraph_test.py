@@ -54,6 +54,18 @@ class InitTest(unittest.TestCase):
         self.assertEqual(self.n1.get_children()[2], 3)
         self.assertEqual(self.n2.get_parents()[1], 3)
         
+    def test_remove_childrens_parents_once(self):
+        self.n1.remove_child_once(2)
+        self.assertEqual(self.n1.get_children(), {2:1})
+        self.n1.remove_parent_once(0)
+        self.assertEqual(self.n1.get_parents(), {})
+        
+    def test_remove_childrens_parents_id(self):
+        self.n1.remove_child_id(2)
+        self.assertEqual(self.n1.get_children(), {})
+        self.n1.remove_parent_id(0)
+        self.assertEqual(self.n1.get_parents(), {})
+        
 
 if __name__ == '__main__': # the following code is called only when
     unittest.main()        # precisely this file is run
