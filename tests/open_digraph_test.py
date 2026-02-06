@@ -66,6 +66,22 @@ class InitTest(unittest.TestCase):
         self.n1.remove_parent_id(0)
         self.assertEqual(self.n1.get_parents(), {})
         
+    def test_remove_edge(self):
+        self.g.remove_edge(1, 2)
+        self.assertEqual(self.n1.get_children(), {2:1})
+        self.assertEqual(self.n2.get_parents(), {1:1})
+    
+    def test_remove_parallel_edges(self):
+        self.g.add_edge(1, 2)
+        self.g.add_edge(1, 2)
+        self.assertEqual(self.n1.get_children(), {2:4})
+        self.assertEqual(self.n2.get_parents(), {1:4})
+        self.g.remove_parallel_edges(1, 2)
+        self.assertEqual(self.n1.get_children(), {})
+        self.assertEqual(self.n2.get_parents(), {})
+        
+    # Continuer les tests...
+        
 
 if __name__ == '__main__': # the following code is called only when
     unittest.main()        # precisely this file is run

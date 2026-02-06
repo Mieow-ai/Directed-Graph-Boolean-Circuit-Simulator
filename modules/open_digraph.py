@@ -93,6 +93,7 @@ class node:
             del self.children[child_id]
         else:
             raise ValueError(f"Child_id {child_id} pas dans node {self.id}")
+        
 
     
 
@@ -184,5 +185,35 @@ class open_digraph: # for open directed graph
         new_node = node(new_id, label, parents, children)
         self.nodes[new_id] = new_node
         return new_id
+    
+    def remove_edge(self, src, tgt):
+        self.nodes[src].remove_child_once(tgt)
+        self.nodes[tgt].remove_parent_once(src)
+    
+    def remove_parallel_edges(self, src, tgt):
+        self.nodes[src].remove_child_id(tgt)
+        self.nodes[tgt].remove_parent_id(src)
+    
+    def remove_node_by_id(self, node_id):
+        if node_id in self.nodes:
+            for parent_id in self.nodes[node_id].get_parents().keys():
+                self.remove_edge(parent_id, node_id)
+            for child_id in self.nodes[node_id].get_children().keys():
+                self.remove_edge(node_id, child_id)
+            del self.nodes[node_id]
+        else:
+            raise ValueError(f"Node_id {node_id} pas dans le graphe")
+        
+    def removes_edges(self, edges):
+        for src, tgt in edges:
+            self.remove_edge(src, tgt)
+    
+    def remove_several_parallel_edges(self, edges):
+        for src, tgt in edges:
+            self.remove_parallel_edges(src, tgt)
+    
+    def remove_nodes_by_id(self, node_ids):
+        for node_id in node_ids:
+            self.remove_node_by_id(node_id)
     
     
