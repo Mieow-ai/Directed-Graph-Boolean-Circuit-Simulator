@@ -6,31 +6,41 @@ import unittest
 from modules.open_digraph import *
 
 class InitTest(unittest.TestCase):
-
+    
+    def setUp(self):
+        self.n0 = node(0, 'i', {}, {1:1})
+        self.n1 = node(1, 'a', {0:1}, {2:2})
+        self.n2 = node(2, 'o', {1:2}, {})
+        self.g = open_digraph([0], [2], [self.n0, self.n1, self.n2])
+    
     def test_init_node(self):
-        n0 = node(0, 'i', {}, {1:1})
-        self.assertEqual(n0.id, 0)
-        self.assertEqual(n0.label, 'i')
-        self.assertEqual(n0.parents, {})
-        self.assertEqual(n0.children, {1:1})
-        self.assertIsInstance(n0, node)
-        self.assertIsNot(n0.copy(), n0)
+        self.assertEqual(self.n0.id, 0)
+        self.assertEqual(self.n0.label, 'i')
+        self.assertEqual(self.n0.parents, {})
+        self.assertEqual(self.n0.children, {1:1})
+        self.assertIsInstance(self.n0, node)
+        self.assertIsNot(self.n0.copy(), self.n0)
     
     def test_init_open_digraph(self):
-        n0 = node(0, 'i', {}, {1:1})
-        n1 = node(1, 'a', {0:1}, {2:2})
-        n2 = node(2, 'o', {1:2}, {})
-        g = open_digraph([0], [2], [n0, n1, n2])
-        self.assertEqual(g.inputs, [0])
-        self.assertEqual(g.outputs, [2])
-        self.assertEqual(g.nodes, {0:n0, 1:n1, 2:n2})
-        self.assertIsInstance(g, open_digraph)
-        self.assertIsNot(g.copy(), g)
-        new_id = g.new_id()
+        self.assertEqual(self.g.inputs, [0])
+        self.assertEqual(self.g.outputs, [2])
+        self.assertEqual(self.g.nodes, {0:self.n0, 1:self.n1, 2:self.n2})
+        self.assertIsInstance(self.g, open_digraph)
+        
+    def test_copy_open_digraph(self):
+        self.assertIsNot(self.g.copy(), self.g)
+    
+    def test_new_id_and_add_edge(self):
+        new_id = self.g.new_id()
         self.assertEqual(new_id, 3)
-        g.add_edge(0, 2)
-        self.assertEqual(n0.get_children()[2], 1)
-        self.assertEqual(n2.get_parents()[0], 1)
+        self.g.add_edge(0, 2)
+        self.assertEqual(self.n0.get_children()[2], 1)
+        self.assertEqual(self.n2.get_parents()[0], 1)
+        self.g.add_edges([(0, 1), (1, 2)])
+        self.assertEqual(self.n0.get_children()[1], 2)
+        self.assertEqual(self.n1.get_parents()[0], 2)
+        self.assertEqual(self.n1.get_children()[2], 3)
+        self.assertEqual(self.n2.get_parents()[1], 3)
         
 
 if __name__ == '__main__': # the following code is called only when
