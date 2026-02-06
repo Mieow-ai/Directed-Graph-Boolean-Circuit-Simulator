@@ -14,6 +14,7 @@ class InitTest(unittest.TestCase):
         self.assertEqual(n0.parents, {})
         self.assertEqual(n0.children, {1:1})
         self.assertIsInstance(n0, node)
+        self.assertIsNot(n0.copy(), n0)
     
     def test_init_open_digraph(self):
         n0 = node(0, 'i', {}, {1:1})
@@ -24,6 +25,7 @@ class InitTest(unittest.TestCase):
         self.assertEqual(g.outputs, [2])
         self.assertEqual(g.nodes, {0:n0, 1:n1, 2:n2})
         self.assertIsInstance(g, open_digraph)
+        self.assertIsNot(g.copy(), g)
 
 if __name__ == '__main__': # the following code is called only when
     unittest.main()        # precisely this file is run
