@@ -28,6 +28,10 @@ class InitTest(unittest.TestCase):
         self.assertIsNot(g.copy(), g)
         new_id = g.new_id()
         self.assertEqual(new_id, 3)
+        g.add_edge(0, 2)
+        self.assertEqual(n0.get_children()[2], 1)
+        self.assertEqual(n2.get_parents()[0], 1)
+        
 
 if __name__ == '__main__': # the following code is called only when
     unittest.main()        # precisely this file is run

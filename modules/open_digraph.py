@@ -48,9 +48,15 @@ class node:
     def set_children(self, children):
         self.children = children
     def add_child_id(self, child_id, multiplicity):
-        self.children[child_id] = multiplicity
+        if child_id in self.children:
+            self.children[child_id] += multiplicity
+        else:
+            self.children[child_id] = multiplicity
     def add_parent_id(self, parent_id, multiplicity):
-        self.parents[parent_id] = multiplicity
+        if parent_id in self.parents:
+            self.parents[parent_id] += multiplicity
+        else:
+            self.parents[parent_id] = multiplicity
 
     
 
@@ -124,3 +130,7 @@ class open_digraph: # for open directed graph
             return 0
         else:
             return max(self.nodes.keys()) + 1
+    
+    def add_edge(self, src, tgt):
+        self.nodes[src].add_child_id(tgt, 1)
+        self.nodes[tgt].add_parent_id(src, 1)
