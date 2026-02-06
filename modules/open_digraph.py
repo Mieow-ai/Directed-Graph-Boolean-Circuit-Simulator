@@ -46,7 +46,11 @@ class node:
     def set_parents(self, parents):
         self.parents = parents
     def set_children(self, children):
-        self.children = children  
+        self.children = children
+    def add_child_id(self, child_id, multiplicity):
+        self.children[child_id] = multiplicity
+    def add_parent_id(self, parent_id, multiplicity):
+        self.parents[parent_id] = multiplicity
 
     
 
@@ -103,3 +107,14 @@ class open_digraph: # for open directed graph
         return self.nodes[id]
     def get_nodes_by_ids(self, ids):
         return list(map(lambda id: self.nodes[id], ids))
+    
+    # Setter
+    
+    def set_inputs(self, inputs):
+        self.inputs = inputs
+    def set_outputs(self, outputs):
+        self.outputs = outputs
+    def add_input_id(self, input_id):
+        self.inputs.append(input_id)
+    def add_output_id(self, output_id):
+        self.outputs.append(output_id)
