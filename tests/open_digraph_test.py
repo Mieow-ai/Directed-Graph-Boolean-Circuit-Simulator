@@ -26,6 +26,8 @@ class InitTest(unittest.TestCase):
         self.assertEqual(g.nodes, {0:n0, 1:n1, 2:n2})
         self.assertIsInstance(g, open_digraph)
         self.assertIsNot(g.copy(), g)
+        new_id = g.new_id()
+        self.assertEqual(new_id, 3)
 
 if __name__ == '__main__': # the following code is called only when
     unittest.main()        # precisely this file is run
