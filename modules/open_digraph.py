@@ -172,6 +172,10 @@ class open_digraph: # for open directed graph
         self.nodes[src].add_child_id(tgt, 1)
         self.nodes[tgt].add_parent_id(src, 1)
     
+    def add_edgeM(self, src, tgt, multiplicity):
+        self.nodes[src].add_child_id(tgt, multiplicity)
+        self.nodes[tgt].add_parent_id(src, multiplicity)
+    
     def add_edges(self, edges):
         for src, tgt in edges:
             self.add_edge(src, tgt)
@@ -265,3 +269,103 @@ class open_digraph: # for open directed graph
     def assert_is_well_formed(self):
         if not self.well_formed():
             raise ValueError("Graphe pas bien formé")
+        
+    def add_input_node(self, id, label=''):
+        if id not in self.nodes.keys():
+            raise ValueError('Pointe vers rien')
+        if id in self.outputs:
+            raise ValueError('Le noeud id est un noeud de sortie alors que la multiplicité ne peut être que de 1')
+        new_id = self.add_node(label, {}, {})
+        self.add_input_id(new_id)
+        self.add_edge(new_id, id)
+        
+    def add_output_node(self, id, label=''):
+        if id not in self.nodes.keys():
+            raise ValueError('Point vers rien')
+        if id in self.inputs:
+            raise ValueError("Le noeud id est un noeud d'entrée alors que la multiplicité ne peut être que de 1")
+        new_id = self.add_node(label, {}, {})
+        self.add_output_id(new_id)
+        self.add_edge(id, new_id)
+    
+    def random_int_list(self, n, bound):
+        import random
+        return [random.randint(0, bound) for e in range(n)]
+    
+    def random_int_matrix(self, n, bound, null_diag=True):
+        res = [self.random_int_list(n, bound) for e in range(n)]
+        if null_diag:
+            for i in range(n):
+                for j in range(n):
+                    res[i][j] = 0
+        return res
+
+    def random_symetric_int_matrix(self, n, bound, null_diag=True):
+        res = self.random_int_matrix(n, bound, null_diag)
+        for i in range(n):
+            for j in range(i-1):
+                res[i][j] = res[j][i]
+        return res
+    
+    def random_oriented_int_matrix(self, n, bound, null_diag=True):
+        res = self.random_int_matrix(n, bound, null_diag)
+        for i in range(n):
+            for j in range(i-1):
+                if res[i][j] != 0:
+                    res[j][i] = 0
+        return res
+    
+    def random_triangular_int_matrix(self, n, bound, null_diag=True):
+        res = self.random_int_matrix(n, bound, null_diag)
+        for i in range(n):
+            for j in range(i-1):
+                res[i][j] = 0
+        return res
+    
+    def graph_from_adjacency_matrix(self, matrix):
+        dim = len(matrix)
+        ids = []
+        for i in range(dim):
+            n = self.add_node()
+            ids.append(n)
+            
+        for i in range(dim):
+            for j in range(dim):
+                if matrix[i][j] > 0:
+                    self.add_edgeM(ids[i], ids[j], matrix[i][j])
+                    
+                
+    @classmethod
+    def random(cls, n, bound, inputs=0, outputs=0, form="free"):
+        """
+        Génère un graphe aléatoire.
+        Options pour form : 
+        - "free" : Graphe quelconque
+        - "loop-free" : Graphe quelconque sans boucles sur soi-même
+        - "undirected" : Graphe symétrique
+        - "loop-free undirected" : Graphe symétrique sans boucles
+        - "oriented" : Graphe orienté
+        - "DAG" : Graphe Acyclique
+        """
+        g = cls()
+        matrix = []
+        if form == "free":
+            matrix = g.random_int_matrix(n, bound, null_diag=False)
+            
+        elif form == "loop-free":
+            matrix = g.random_int_matrix(n, bound, null_diag=True)
+            
+        elif form == "undirected":
+            matrix = g.random_symetric_int_matrix(n, bound, null_diag=False)
+            
+        elif form == "loop-free undirected":
+            matrix = g.random_symetric_int_matrix(n, bound, null_diag=True)
+            
+        elif form == "oriented":
+            matrix = g.random_oriented_int_matrix(n, bound, null_diag=True)
+            
+        elif form == "DAG":
+            matrix = g.random_triangular_int_matrix(n, bound, null_diag=True)
+        else:
+            raise ValueError(f"Forme de graphe inconnue : {form}")
+            

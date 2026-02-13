@@ -12,6 +12,11 @@ class InitTest(unittest.TestCase):
         self.n1 = node(1, 'a', {0:1}, {2:2})
         self.n2 = node(2, 'o', {1:2}, {})
         self.g = open_digraph([0], [2], [self.n0, self.n1, self.n2])
+        
+        self.n0_2 = node(0, 'i', {}, {1:1})
+        self.n1_2 = node(1, 'a', {0:1}, {2:1})
+        self.n2_2 = node(2, 'o', {1:1}, {})
+        self.g2 = open_digraph([0], [2], [self.n0_2, self.n1_2, self.n2_2])
     
     def test_init_node(self):
         self.assertEqual(self.n0.id, 0)
@@ -81,13 +86,18 @@ class InitTest(unittest.TestCase):
         self.assertEqual(self.n2.get_parents(), {})
         
     def test_well_formed(self):
-        self.n0 = node(0, 'i', {}, {1:1})
-        self.n1 = node(1, 'a', {0:1}, {2:1})
-        self.n2 = node(2, 'o', {1:1}, {})
-        self.g2 = open_digraph([0], [2], [self.n0, self.n1, self.n2])
         self.assertTrue(self.g2.well_formed())
-        self.g.add_edge(0, 2)
-        self.assertFalse(self.g.well_formed())
+        self.g2.add_edge(0, 2)
+        self.assertFalse(self.g2.well_formed())
+        
+    def test_add_input_node(self):
+        self.g2.add_input_node(1)
+        self.assertTrue(self.g2.well_formed())
+    
+    def test_add_output_node(self):
+        self.g2.add_output_node(1)
+        self.assertTrue(self.g2.well_formed())
+        
         
         
     # Continuer les tests...
