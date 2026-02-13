@@ -80,6 +80,12 @@ class InitTest(unittest.TestCase):
         self.assertEqual(self.n1.get_children(), {})
         self.assertEqual(self.n2.get_parents(), {})
         
+    def test_well_formed(self):
+        self.assertTrue(self.g.well_formed())
+        self.g.add_edge(0, 3)
+        self.assertFalse(self.g.well_formed())
+        
+        
     # Continuer les tests...
         
 

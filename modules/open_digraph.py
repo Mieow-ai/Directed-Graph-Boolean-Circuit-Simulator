@@ -186,6 +186,8 @@ class open_digraph: # for open directed graph
         self.nodes[new_id] = new_node
         return new_id
     
+    # Other methods
+    
     def remove_edge(self, src, tgt):
         self.nodes[src].remove_child_once(tgt)
         self.nodes[tgt].remove_parent_once(src)
@@ -215,5 +217,51 @@ class open_digraph: # for open directed graph
     def remove_nodes_by_id(self, node_ids):
         for node_id in node_ids:
             self.remove_node_by_id(node_id)
+            
+    def __delitem__(self, node_id):
+        self.remove_node_by_id(node_id)
     
+    def well_formed(self):
+        for node_id in self.inputs + self.outputs:
+            if node_id not in self.nodes:
+                return False
+        
+        for node_id in self.inputs:
+            node = self.nodes[node_id]
+            if len(node.get_parents()) != 0:
+                return False
+            children = node.get_children()
+            if len(children) != 1:
+                return False
+            if list(children.values())[0] != 1:
+                return False
+            
+        for node_id in self.outputs:
+            node = self.nodes[node_id]
+            if len(node.get_children()) != 0:
+                return False
+            parents = node.get_parents()
+            if len(parents) != 1:
+                return False
+            if list(parents.values())[0] != 1:
+                return False
+            
+        for key, node in self.nodes.items():
+            if key != node.get_id():
+                return False
+        
+        for node_id, node in self.nodes.items():
+            for child_id, m in node.get_children().items():
+                if child_id not in self.nodes:
+                    return False
+                child_node = self.nodes[child_id]
+                child_parents = child_node.get_parents()
+                if node_id not in child_parents:
+                    return False
+                if child_parents[node_id] != m:
+                    return False
+        return True
     
+    def assert_is_well_formed(self):
+        if not self.well_formed():
+            raise ValueError("Graphe pas bien formé")
