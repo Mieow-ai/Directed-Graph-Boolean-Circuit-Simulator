@@ -81,8 +81,12 @@ class InitTest(unittest.TestCase):
         self.assertEqual(self.n2.get_parents(), {})
         
     def test_well_formed(self):
-        self.assertTrue(self.g.well_formed())
-        self.g.add_edge(0, 3)
+        self.n0 = node(0, 'i', {}, {1:1})
+        self.n1 = node(1, 'a', {0:1}, {2:1})
+        self.n2 = node(2, 'o', {1:1}, {})
+        self.g2 = open_digraph([0], [2], [self.n0, self.n1, self.n2])
+        self.assertTrue(self.g2.well_formed())
+        self.g.add_edge(0, 2)
         self.assertFalse(self.g.well_formed())
         
         
