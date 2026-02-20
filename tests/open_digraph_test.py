@@ -97,9 +97,76 @@ class InitTest(unittest.TestCase):
     def test_add_output_node(self):
         self.g2.add_output_node(1)
         self.assertTrue(self.g2.well_formed())
-        
-        
-        
+      
+    def test_random_int_list(self):
+        lst = open_digraph.random_int_list(5, 10)
+        self.assertEqual(len(lst), 5)
+        for x in lst:
+            self.assertTrue(0 <= x < 10)
+    
+    def test_random_int_matrix(self):
+        matrix = open_digraph.random_int_matrix(3, 5)
+        self.assertEqual(len(matrix), 3)
+        for row in matrix:
+            self.assertEqual(len(row), 3)
+            for x in row:
+                self.assertTrue(0 <= x < 5)
+            
+    def test_random_symetric_int_matrix(self):
+        matrix = open_digraph.random_symetric_int_matrix(3, 5)
+        self.assertEqual(len(matrix), 3)
+        for row in matrix:
+            self.assertEqual(len(row), 3)
+            for x in row:
+                self.assertTrue(0 <= x < 5)
+        for i in range(3):
+            for j in range(i+1, 3):
+                self.assertEqual(matrix[i][j], matrix[j][i])
+    
+    def test_random_oriented_int_matrix(self):
+        matrix = open_digraph.random_oriented_int_matrix(3, 5)
+        self.assertEqual(len(matrix), 3)
+        for row in matrix:
+            self.assertEqual(len(row), 3)
+            for x in row:
+                self.assertTrue(0 <= x < 5)
+        for i in range(3):
+            for j in range(i+1, 3):
+                self.assertTrue(matrix[i][j] == 0 or matrix[j][i] == 0)
+                         
+    def test_random_triangular_int_matrix(self):
+        matrix = open_digraph.random_triangular_int_matrix(3, 5)
+        self.assertEqual(len(matrix), 3)
+        for row in matrix:
+            self.assertEqual(len(row), 3)
+            for x in row:
+                self.assertTrue(0 <= x < 5)
+        for i in range(3):
+            self.assertEqual(matrix[i][i], 0)
+            for j in range(i+1, 3):
+                self.assertEqual(matrix[j][i], 0)
+                
+    def test_graph_from_adjacency_matrix(self):
+        matrix = [[0, 1, 0], [0, 0, 2], [0, 0, 0]]
+        g = open_digraph.empty()
+        g.graph_from_adjacency_matrix(matrix)
+        self.assertEqual(g.nodes[0].get_children(), {1:1})
+        self.assertEqual(g.nodes[1].get_parents(), {0:1})
+        self.assertEqual(g.nodes[1].get_children(), {2:2})
+        self.assertEqual(g.nodes[2].get_parents(), {1:2})
+      
+    def test_random_graph(self):
+        n = 5
+        inputs_count = 2
+        outputs_count = 2
+    
+        g = open_digraph.random(n, 3, inputs=inputs_count, outputs=outputs_count, form='DAG')
+        self.assertEqual(len(g.nodes), n + inputs_count + outputs_count)
+        self.assertEqual(len(g.inputs), inputs_count)
+        self.assertEqual(len(g.outputs), outputs_count)
+        self.assertEqual(g.inputs, [5, 6])
+        self.assertEqual(g.outputs, [7, 8])
+    
     # Continuer les tests...
         
 

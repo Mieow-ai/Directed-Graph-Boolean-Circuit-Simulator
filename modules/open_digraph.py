@@ -288,37 +288,42 @@ class open_digraph: # for open directed graph
         self.add_output_id(new_id)
         self.add_edge(id, new_id)
     
-    def random_int_list(self, n, bound):
+    @staticmethod
+    def random_int_list(n, bound):
         import random
-        return [random.randint(0, bound) for e in range(n)]
+        return [random.randrange(0, bound) for e in range(n)]
     
-    def random_int_matrix(self, n, bound, null_diag=True):
-        res = [self.random_int_list(n, bound) for e in range(n)]
+    @staticmethod
+    def random_int_matrix(n, bound, null_diag=True):
+        res = [open_digraph.random_int_list(n, bound) for e in range(n)]
         if null_diag:
             for i in range(n):
                 for j in range(n):
                     res[i][j] = 0
         return res
 
-    def random_symetric_int_matrix(self, n, bound, null_diag=True):
-        res = self.random_int_matrix(n, bound, null_diag)
+    @staticmethod
+    def random_symetric_int_matrix(n, bound, null_diag=True):
+        res = open_digraph.random_int_matrix(n, bound, null_diag)
         for i in range(n):
-            for j in range(i-1):
+            for j in range(i+1, n):
                 res[i][j] = res[j][i]
         return res
     
-    def random_oriented_int_matrix(self, n, bound, null_diag=True):
-        res = self.random_int_matrix(n, bound, null_diag)
+    @staticmethod
+    def random_oriented_int_matrix(n, bound, null_diag=True):
+        res = open_digraph.random_int_matrix(n, bound, null_diag)
         for i in range(n):
-            for j in range(i-1):
+            for j in range(i+1, n):
                 if res[i][j] != 0:
                     res[j][i] = 0
         return res
     
-    def random_triangular_int_matrix(self, n, bound, null_diag=True):
-        res = self.random_int_matrix(n, bound, null_diag)
+    @staticmethod
+    def random_triangular_int_matrix(n, bound, null_diag=True):
+        res = open_digraph.random_int_matrix(n, bound, null_diag)
         for i in range(n):
-            for j in range(i-1):
+            for j in range(i+1, n):
                 res[i][j] = 0
         return res
     
@@ -347,7 +352,7 @@ class open_digraph: # for open directed graph
         - "oriented" : Graphe orienté
         - "DAG" : Graphe Acyclique
         """
-        g = cls()
+        g = cls.empty()
         matrix = []
         if form == "free":
             matrix = g.random_int_matrix(n, bound, null_diag=False)
@@ -368,4 +373,29 @@ class open_digraph: # for open directed graph
             matrix = g.random_triangular_int_matrix(n, bound, null_diag=True)
         else:
             raise ValueError(f"Forme de graphe inconnue : {form}")
-            
+        g.graph_from_adjacency_matrix(matrix)
+        ids = sorted(list(g.nodes.keys()))
+        n_inputs = [i for i in ids if not g.nodes[i].get_parents()]
+        n_outputs = [i for i in ids if not g.nodes[i].get_children()]
+        for i in range(inputs):
+            g.add_input_node(n_inputs[i])
+        for i in range(outputs):
+            g.add_output_node(n_outputs[i])
+        return g
+    
+    def graph_to_dict(self):
+        res = {}
+        for i, node_id in enumerate(self.nodes.keys()):
+            res[node_id] = i
+        return res
+    
+    def adjacency_matrix(self):
+        n = len(self.nodes)
+        matrix = [[0 for j in range(n)] for i in range(n)]
+        id_to_index = self.graph_to_dict()
+        for node_id, node in self.nodes.items():
+            for child_id, m in node.get_children().items():
+                matrix[id_to_index[node_id]][id_to_index[child_id]] = m
+        return matrix
+    
+    
