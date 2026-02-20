@@ -398,4 +398,28 @@ class open_digraph: # for open directed graph
                 matrix[id_to_index[node_id]][id_to_index[child_id]] = m
         return matrix
     
-    
+    def save_as_dot_file(self, path, verbose=False):
+        f_path = open(path, 'w')
+        f_path.write('Digraph G {\n')
+        inputs = self.inputs_ids()
+        outputs = self.outputs_ids()
+        nodes = self.get_nodes()
+            
+        for i in range(len(inputs)):
+            f_path.write(f'I{i}[label="input:{i}"];\n')
+        for j in range(len(outputs)):
+            f_path.write(f'S{j}[label="input:{j}"];\n')
+        """
+        for k, n in enumerate(nodes):
+            if not n.get_id() in inputs:
+        f_path.write(f'start -> U{i};\n')
+        f_path.write(f'{output_id} -> end;\n')
+        """
+                
+            
+            
+            
+            
+
+        
+        

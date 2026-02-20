@@ -166,6 +166,13 @@ class InitTest(unittest.TestCase):
         self.assertEqual(len(g.outputs), outputs_count)
         self.assertEqual(g.inputs, [5, 6])
         self.assertEqual(g.outputs, [7, 8])
+        
+    def test_graph_to_dict(self):
+        d = self.g.graph_to_dict()
+        for i, new_index in enumerate(d.items()):
+            self.assertEqual(new_index[0], i)
+    
+        
     
     # Continuer les tests...
         
