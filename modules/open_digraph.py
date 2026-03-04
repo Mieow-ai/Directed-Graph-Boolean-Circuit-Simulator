@@ -298,8 +298,7 @@ class open_digraph: # for open directed graph
         res = [open_digraph.random_int_list(n, bound) for e in range(n)]
         if null_diag:
             for i in range(n):
-                for j in range(n):
-                    res[i][j] = 0
+                    res[i][i] = 0
         return res
 
     @staticmethod
