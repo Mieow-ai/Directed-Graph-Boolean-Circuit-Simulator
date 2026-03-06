@@ -468,7 +468,9 @@ class open_digraph: # for open directed graph
             return False
         return self.inputs == other.inputs and self.outputs == other.outputs and self.nodes == other.nodes
     def display(self):
-        
+        #A faire
+        return None
+
 
 
         
