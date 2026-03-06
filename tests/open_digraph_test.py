@@ -173,6 +173,11 @@ class InitTest(unittest.TestCase):
             self.assertEqual(new_index[0], i)
     
         
+    def test_dot_file(self):
+        self.g.save_as_dot_file('test.dot')
+        g2 = open_digraph.from_dot_file('test.dot')
+        self.assertEqual(self.g, g2)
+        os.remove('test.dot')
     
     # Continuer les tests...
         

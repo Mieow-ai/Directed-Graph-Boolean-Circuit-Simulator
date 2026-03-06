@@ -93,6 +93,10 @@ class node:
             del self.children[child_id]
         else:
             raise ValueError(f"Child_id {child_id} pas dans node {self.id}")
+    def __eq__(self, other):
+        if not isinstance(other, node):
+            return False
+        return self.id == other.id and self.label == other.label and self.parents == other.parents and self.children == other.children
         
 
     
@@ -180,8 +184,13 @@ class open_digraph: # for open directed graph
         for src, tgt in edges:
             self.add_edge(src, tgt)
             
-    def add_node(self, label='', parents=None, children=None):
-        new_id = self.new_id()
+    def add_node(self, label='', parents=None, children=None, id=None):
+        if id is None:
+            new_id = self.new_id()
+        else:
+            if id in self.nodes:
+                raise ValueError(f"Id {id} déjà dans le graphe")
+            new_id = id
         if parents is None:
             parents = {}
         if children is None:
@@ -338,7 +347,22 @@ class open_digraph: # for open directed graph
                 if matrix[i][j] > 0:
                     self.add_edgeM(ids[i], ids[j], matrix[i][j])
                     
-                
+    @classmethod
+    def graph_from_adjacency_matrix(cls, matrix):
+        """
+        Construit et renvoie un multigraphe à partir d'une matrice.
+        inputs et outputs restent vides.
+        """
+        g = cls.empty()
+        dim = len(matrix)
+        ids = [g.add_node() for _ in range(dim)]
+        for i in range(dim):
+            for j in range(dim):
+                m = matrix[i][j]
+                if m > 0:
+                    g.add_edgeM(ids[i], ids[j], m)
+        return g
+    
     @classmethod
     def random(cls, n, bound, inputs=0, outputs=0, form="free"):
         """
@@ -351,34 +375,27 @@ class open_digraph: # for open directed graph
         - "oriented" : Graphe orienté
         - "DAG" : Graphe Acyclique
         """
-        g = cls.empty()
-        matrix = []
         if form == "free":
-            matrix = g.random_int_matrix(n, bound, null_diag=False)
-            
+            matrix = cls.random_int_matrix(n, bound, null_diag=False)
         elif form == "loop-free":
-            matrix = g.random_int_matrix(n, bound, null_diag=True)
-            
+            matrix = cls.random_int_matrix(n, bound, null_diag=True)
         elif form == "undirected":
-            matrix = g.random_symetric_int_matrix(n, bound, null_diag=False)
-            
+            matrix = cls.random_symetric_int_matrix(n, bound, null_diag=False)
         elif form == "loop-free undirected":
-            matrix = g.random_symetric_int_matrix(n, bound, null_diag=True)
-            
+            matrix = cls.random_symetric_int_matrix(n, bound, null_diag=True)
         elif form == "oriented":
-            matrix = g.random_oriented_int_matrix(n, bound, null_diag=True)
-            
+            matrix = cls.random_oriented_int_matrix(n, bound, null_diag=True)
         elif form == "DAG":
-            matrix = g.random_triangular_int_matrix(n, bound, null_diag=True)
+            matrix = cls.random_triangular_int_matrix(n, bound, null_diag=True)
         else:
             raise ValueError(f"Forme de graphe inconnue : {form}")
-        g.graph_from_adjacency_matrix(matrix)
-        ids = sorted(list(g.nodes.keys()))
+        g = cls.graph_from_adjacency_matrix(matrix)
+        ids = sorted(g.nodes.keys())
         n_inputs = [i for i in ids if not g.nodes[i].get_parents()]
         n_outputs = [i for i in ids if not g.nodes[i].get_children()]
-        for i in range(inputs):
+        for i in range(min(inputs, len(n_inputs))):
             g.add_input_node(n_inputs[i])
-        for i in range(outputs):
+        for i in range(min(outputs, len(n_outputs))):
             g.add_output_node(n_outputs[i])
         return g
     
@@ -398,27 +415,61 @@ class open_digraph: # for open directed graph
         return matrix
     
     def save_as_dot_file(self, path, verbose=False):
-        f_path = open(path, 'w')
-        f_path.write('Digraph G {\n')
-        inputs = self.inputs_ids()
-        outputs = self.outputs_ids()
-        nodes = self.get_nodes()
+        # attribut isInput et isOutput
+        with open(path, 'w') as f:
+            f.write('Digraph G {\n')
+            inputs = self.inputs_ids()
+            outputs = self.outputs_ids()
+            nodes = self.nodes
             
-        for i in range(len(inputs)):
-            f_path.write(f'I{i}[label="input:{i}"];\n')
-        for j in range(len(outputs)):
-            f_path.write(f'S{j}[label="input:{j}"];\n')
-        """
-        for k, n in enumerate(nodes):
-            if not n.get_id() in inputs:
-        f_path.write(f'start -> U{i};\n')
-        f_path.write(f'{output_id} -> end;\n')
-        """
-                
+            for id,node in nodes.items():
+                label = node.get_label()
+                if verbose:
+                    label += f"\\nID : {id}"
+                f.write(f"{id} [label=\"{label}\",isInput={id in inputs},isOutput={id in outputs}];\n")
+            for id, node in nodes.items():
+                for child_id, m  in node.get_children().items():
+                    for i in range(m):
+                        f.write(f"{id} -> {child_id};\n")
+            f.write('}')
             
-            
-            
-            
+    @classmethod
+    def from_dot_file(self, path):
+        with open(path, 'r') as f:
+            g = open_digraph.empty()
+            while True:
+                line = f.readline()
+                if "Digraph G {" in line: # Première ligne
+                    continue
+                if not line or "}" in line: # Fin du fichier
+                    break
+                # format d'une ligne d'ajout de noeud : id [label="label",isInput=True/False,isOutput=True/False];
+                # format d'une ligne d'ajout d'arête : id1 -> id2;
+                if "->"  not in line:
+                    id, rest = line.split("[")
+                    id = int(id)
+                    attr = rest.split(",")
+                    label = attr[0].split("=")[1][1:-1]
+                    is_input = attr[1].split("=")[1] == "True"
+                    is_output = attr[2].split("=")[1].split("]")[0] == "True"
+                    g.add_node(label, id=id)
+                    if is_input:
+                        g.add_input_id(id)
+                    if is_output:
+                        g.add_output_id(id)
+                else:
+                    src, tgt = line.split("->")
+                    src = int(src.strip())
+                    tgt = int(tgt.strip().split(";")[0])
+                    g.add_edge(src, tgt)
+        return g   
+    def __eq__(self, other):
+        if not isinstance(other, open_digraph):
+            return False
+        return self.inputs == other.inputs and self.outputs == other.outputs and self.nodes == other.nodes
+    def display(self):
+        
+
 
         
         
