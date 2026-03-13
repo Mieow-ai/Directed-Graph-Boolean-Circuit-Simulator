@@ -1,3 +1,4 @@
+import os 
 class node:
     def __init__(self, identity, label, parents, children):
         '''
@@ -468,10 +469,20 @@ class open_digraph: # for open directed graph
             return False
         return self.inputs == other.inputs and self.outputs == other.outputs and self.nodes == other.nodes
     def display(self):
-        #A faire
-        return None
-
-
-
-        
+        endl="%0A%09"
+        pvirg = "%3B"
+        self.save_as_dot_file("temp.dot")
+        with open("temp.dot", 'r') as f:
+            lines = ""
+            while True:
+                line= f.readline()
+                if not line:
+                    break
+                lines += line
+            import webbrowser
+            lines = lines.replace(" ", "%20").replace("\n", endl).replace(";", pvirg)
+            url = "https://dreampuf.github.io/GraphvizOnline/#" + lines
+            print(f"Graphe affiché à l'adresse suivante : {url}")
+            
+            os.remove("temp.dot")
         

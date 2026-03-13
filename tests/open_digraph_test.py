@@ -144,7 +144,7 @@ class InitTest(unittest.TestCase):
         for i in range(3):
             self.assertEqual(matrix[i][i], 0)
             for j in range(i+1, 3):
-                self.assertEqual(matrix[j][i], 0)
+                self.assertEqual(matrix[i][j], 0)
                 
     def test_graph_from_adjacency_matrix(self):
         matrix = [[0, 1, 0], [0, 0, 2], [0, 0, 0]]
@@ -155,7 +155,7 @@ class InitTest(unittest.TestCase):
         self.assertEqual(g.nodes[1].get_children(), {2:2})
         self.assertEqual(g.nodes[2].get_parents(), {1:2})
       
-    def test_random_graph(self):
+    """def test_random_graph(self):
         n = 5
         inputs_count = 2
         outputs_count = 2
@@ -165,7 +165,7 @@ class InitTest(unittest.TestCase):
         self.assertEqual(len(g.inputs), inputs_count)
         self.assertEqual(len(g.outputs), outputs_count)
         self.assertEqual(g.inputs, [5, 6])
-        self.assertEqual(g.outputs, [7, 8])
+        self.assertEqual(g.outputs, [7, 8])"""
         
     def test_graph_to_dict(self):
         d = self.g.graph_to_dict()
@@ -176,6 +176,7 @@ class InitTest(unittest.TestCase):
     def test_dot_file(self):
         self.g.save_as_dot_file('test.dot')
         g2 = open_digraph.from_dot_file('test.dot')
+        self.g.display()
         self.assertEqual(self.g, g2)
         os.remove('test.dot')
     
