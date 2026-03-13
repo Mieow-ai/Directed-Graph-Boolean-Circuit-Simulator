@@ -349,7 +349,7 @@ class open_digraph: # for open directed graph
                     self.add_edgeM(ids[i], ids[j], matrix[i][j])
                     
     @classmethod
-    def graph_from_adjacency_matrix(cls, matrix):
+    def from_adjacency_matrix(cls, matrix):
         """
         Construit et renvoie un multigraphe à partir d'une matrice.
         inputs et outputs restent vides.
@@ -390,7 +390,7 @@ class open_digraph: # for open directed graph
             matrix = cls.random_triangular_int_matrix(n, bound, null_diag=True)
         else:
             raise ValueError(f"Forme de graphe inconnue : {form}")
-        g = cls.graph_from_adjacency_matrix(matrix)
+        g = cls.from_adjacency_matrix(matrix)
         ids = sorted(g.nodes.keys())
         n_inputs = [i for i in ids if not g.nodes[i].get_parents()]
         n_outputs = [i for i in ids if not g.nodes[i].get_children()]

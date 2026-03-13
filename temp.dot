@@ -1,0 +1,8 @@
+Digraph G {
+0 [label="i",isInput=True,isOutput=False];
+1 [label="a",isInput=False,isOutput=False];
+2 [label="o",isInput=False,isOutput=True];
+0 -> 1;
+1 -> 2;
+1 -> 2;
+}
