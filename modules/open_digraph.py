@@ -468,9 +468,18 @@ class open_digraph: # for open directed graph
         if not isinstance(other, open_digraph):
             return False
         return self.inputs == other.inputs and self.outputs == other.outputs and self.nodes == other.nodes
-    def display(self):
-        self.save_as_dot_file("temp.dot")
-        os.system("dot -Tpdf temp.dot -o temp.pdf")
+    def display(self, verbose=False):
         import webbrowser
-        webbrowser.open("file://" + os.path.abspath("temp.pdf"))
+        self.save_as_dot_file("temp.dot")
+        commande = "dot -Tpdf temp.dot -o temp.pdf"
+        if verbose:
+            print("--- Mode Verbose ---")
+            print("Fichier .dot généré : temp.dot")
+            print(f"Exécution de la commande : {commande}")
+        os.system(commande)
+        chemin_pdf = "file://" + os.path.abspath("temp.pdf")
+        if verbose:
+            print(f"Ouverture du fichier : {chemin_pdf}")
+            print("--------------------")
+        webbrowser.open(chemin_pdf)
         

@@ -176,7 +176,7 @@ class InitTest(unittest.TestCase):
     def test_dot_file(self):
         self.g.save_as_dot_file('test.dot')
         g2 = open_digraph.from_dot_file('test.dot')
-        self.g.display()
+        self.g.display(True)
         self.assertEqual(self.g, g2)
         os.remove('test.dot')
     
