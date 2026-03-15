@@ -98,6 +98,15 @@ class node:
         if not isinstance(other, node):
             return False
         return self.id == other.id and self.label == other.label and self.parents == other.parents and self.children == other.children
+    
+    def indegree(self):
+        return sum(self.parents.values())
+    
+    def outdegree(self):
+        return sum(self.children.values())
+    
+    def degree(self):
+        return self.indegree() + self.outdegree()
         
 
     
@@ -483,3 +492,28 @@ class open_digraph: # for open directed graph
             print("--------------------")
         webbrowser.open(chemin_pdf)
         
+    def min_id(self):
+        if len(self.nodes) == 0:
+            return None
+        else:
+            return min(self.nodes.keys())
+        
+    def max_id(self):
+        if len(self.nodes) == 0:
+            return None
+        else:
+            return max(self.nodes.keys())
+        
+    def shift_indices(self, n):
+        new_nodes = {}
+        for id, node in self.nodes.items():
+            new_id = id + n
+            new_parents = {parent_id + n: m for parent_id, m in node.get_parents().items()}
+            new_children = {child_id + n: m for child_id, m in node.get_children().items()}
+            new_nodes[new_id] = node.copy()
+            new_nodes[new_id].set_id(new_id)
+            new_nodes[new_id].set_parents(new_parents)
+            new_nodes[new_id].set_children(new_children)
+        new_inputs = [input_id + n for input_id in self.inputs]
+        new_outputs = [output_id + n for output_id in self.outputs]
+        return open_digraph(new_inputs, new_outputs, new_nodes.values())
