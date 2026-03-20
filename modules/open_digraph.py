@@ -505,6 +505,8 @@ class open_digraph: # for open directed graph
             return max(self.nodes.keys())
         
     def shift_indices(self, n):
+        if n == None:
+            return self.copy()
         new_nodes = {}
         for id, node in self.nodes.items():
             new_id = id + n
