@@ -1,4 +1,9 @@
-from open_digraph import open_digraph
+import sys
+import os
+try:
+    from open_digraph import open_digraph
+except ImportError:
+    from modules.open_digraph import open_digraph
 
 class bool_circ(open_digraph):
     def __init__(self, g):
@@ -23,32 +28,35 @@ class bool_circ(open_digraph):
     def is_well_formed(self):
         if self.is_cyclic():
             return False
-        for id_noeud, noeud in self.get_id_node_map().items():
+        node_map = self.get_id_node_map()
+        for id_noeud, noeud in node_map.items():
             for id_parent, multiplicite in noeud.get_parents().items():
-                if id_parent not in self.get_id_node_map():
+                if id_parent not in node_map:
                     return False
-                if self.get_nodes()[id_parent].outdegree() < multiplicite:
+                if node_map[id_parent].outdegree() < multiplicite:
                     return False
             for id_enfant, multiplicite in noeud.get_children().items():
-                if id_enfant not in self.get_nodes():
+                if id_enfant not in node_map:
                     return False
-                if self.get_nodes()[id_enfant].indegree() < multiplicite:
+                if node_map[id_enfant].indegree() < multiplicite:
                     return False
         return True
 
-    def Compo_parallele(self, other):
+    def compo_parallele(self, other):
         f = self.copy()
-        g = other.shift_indices(f.max_id()+1)
+        shift = (f.max_id() + 1) if f.max_id() is not None else 0
+        g = other.shift_indices(shift)
         inputs = f.inputs_ids() + g.inputs_ids()
         outputs = f.outputs_ids() + g.outputs_ids()
         nodes = f.get_nodes() + g.get_nodes()
         return bool_circ(open_digraph(inputs, outputs, nodes))
     
-    def Compo_sequentielle(self, other):
+    def compo_sequentielle(self, other):
         if (len(self.outputs_ids()) != len(other.inputs_ids())):
             raise ValueError("Il faut avoir le même nombre de sorties dans le premier circuit et d'entrées dans le second")
         f = self.copy()
-        g = other.shift_indices(f.max_id()+1)
+        shift = (f.max_id() + 1) if f.max_id() is not None else 0
+        g = other.shift_indices(shift)
         inputs = f.inputs_ids()
         outputs = g.outputs_ids()
         foutputs = f.outputs_ids()
@@ -60,9 +68,11 @@ class bool_circ(open_digraph):
             gid = ginputs[i]
             noeudsortie = f.get_node_by_id(fid)
             noeudentree = g.get_node_by_id(gid)
+            parents = list(noeudsortie.get_parents().keys())
+            children = list(noeudentree.get_children().keys())
             combined.remove_node_by_id(fid)
             combined.remove_node_by_id(gid)
-            combined.add_edge(noeudsortie.get_parents()[0], noeudentree.get_children()[0])
+            if parents and children:
+                combined.add_edge(parents[0], children[0])
         return bool_circ(combined)
             
-         

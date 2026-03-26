@@ -4,6 +4,7 @@ root = os.path.normpath(os.path.join(__file__, './../..'))
 sys.path.append(root) # allows us to fetch files from the project root
 import unittest
 from modules.open_digraph import *
+from modules.bool_circ import *
 
 class InitTest(unittest.TestCase):
     
@@ -180,11 +181,62 @@ class InitTest(unittest.TestCase):
         self.assertEqual(self.g, g2)
         os.remove('test.dot')
     
-    # Continuer les tests...
+    def test_compo_parallele(self):
+        g_vide = open_digraph.empty()
+        b_vide = bool_circ(g_vide)
+        res_vide = b_vide.compo_parallele(b_vide)
+        self.assertEqual(len(res_vide.get_nodes()), 0)
+        self.assertEqual(len(res_vide.inputs_ids()), 0)
+        
+        g1 = open_digraph.empty()
+        n1 = g1.add_node()
+        g1.add_input_id(n1)
+        b1 = bool_circ(g1)
+        
+        res_neutre = b_vide.compo_parallele(b1)
+        self.assertEqual(len(res_neutre.get_nodes()), 1)
+        self.assertEqual(len(res_neutre.inputs_ids()), 1)
+        
+        g2 = open_digraph.empty()
+        n2 = g2.add_node()
+        g2.add_output_id(n2)
+        b2 = bool_circ(g2)
+        
+        res_parallele = b1.compo_parallele(b2)
+        self.assertEqual(len(res_parallele.get_nodes()), 2)
+        self.assertEqual(len(res_parallele.inputs_ids()), 1)
+        self.assertEqual(len(res_parallele.outputs_ids()), 1)
+
+    def test_compo_sequentielle(self):
+        g1 = open_digraph.empty()
+        g2 = open_digraph.empty()
+        n1 = g1.add_node()
+        g1.add_output_id(n1)
+        b1 = bool_circ(g1)
+        b2 = bool_circ(g2)
+        
+        with self.assertRaises(ValueError):
+            b1.compo_sequentielle(b2) 
+    
+        g3 = open_digraph.empty()
+        n3 = g3.add_node()
+        g3.add_output_node(n3)
+        b3 = bool_circ(g3)
+        
+        g4 = open_digraph.empty()
+        n4 = g4.add_node()
+        g4.add_input_node(n4)
+        b4 = bool_circ(g4)
+        
+        res_seq = b3.compo_sequentielle(b4)
+        self.assertEqual(len(res_seq.get_nodes()), 2)
+        self.assertEqual(len(res_seq.outputs_ids()), 0)
+        self.assertEqual(len(res_seq.inputs_ids()), 0)
+
         
 
-if __name__ == '__main__': # the following code is called only when
-    unittest.main()        # precisely this file is run
+if __name__ == '__main__': 
+    unittest.main()        
 
 class NodeTest(unittest.TestCase):
     def setUp(self):
