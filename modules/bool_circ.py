@@ -127,6 +127,19 @@ class bool_circ(open_digraph):
                         return dist, prev
                     queue.append(voisin)
         return dist, prev
-                        
+    
+    def shortest_path(self, src, tgt, direction = 1):
+        dist, prev = self.longueurs_bfs(src, direction, tgt)
+        distance = dist[tgt] if tgt in dist else None
+        path = []
+        if distance is not None:
+            current = tgt
+            while current != src:
+                path.append(current)
+                current = prev[current]
+            path.append(src)
+            path.reverse()
+        return distance, path
+                            
         
                 
