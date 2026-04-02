@@ -153,6 +153,29 @@ class bool_circ(open_digraph):
                 resultat[id] = (dist1[id], dist2[id])
         return resultat
 
-                            
-        
+    # Tri topologique "compréssé vers le haut"                            
+    # On réutilise une partie du code de is_cyclic
+    def tri_topologique(self):
+        g_copy = self.copy()
+        res = []
+        while len(g_copy.get_nodes()) > 0:
+            cofeuilles = []
+            res.append([])
+            for id_noeud, noeud in g_copy.get_id_node_map().items():
+                if noeud.outdegree() == 0:
+                    cofeuilles.append(id_noeud)
+            # On retire les feuilles après avoir trouver tout le niveau courant
+            for id in cofeuilles:
+                res[-1].append(id)
+                g_copy.remove_node_by_id(id)
+            if not cofeuilles:
+                raise ValueError("Le graphe est cyclique, tri topologique impossible")
+        return res
+    def profondeur_noeud(self, id_noeud):
+        tri = self.tri_topologique()
+        for i in range(len(tri)):
+            if id_noeud in tri[i]:
+                return i
+        raise ValueError("l'id n'est pas dans le graphe")
+
                 
