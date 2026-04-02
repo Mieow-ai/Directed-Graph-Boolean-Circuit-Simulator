@@ -7,7 +7,7 @@ except ImportError:
 
 class bool_circ(open_digraph):
     def __init__(self, g):
-        super().__init__(g.inputs, g.outputs, g.nodes.values())
+        super().__init__(g.inputs.copy(), g.outputs.copy(), g.nodes.values())
         if not self.is_well_formed():
             raise ValueError("Le graphe fourni n'est pas un circuit booléen valide (acyclique avec contraintes de degré respectées)")
         
