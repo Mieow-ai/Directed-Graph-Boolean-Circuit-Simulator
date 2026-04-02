@@ -160,16 +160,16 @@ class bool_circ(open_digraph):
         res = []
         while len(g_copy.get_nodes()) > 0:
             cofeuilles = []
-            res.append([])
             for id_noeud, noeud in g_copy.get_id_node_map().items():
-                if noeud.outdegree() == 0:
+                if noeud.indegree() == 0:
                     cofeuilles.append(id_noeud)
-            # On retire les feuilles après avoir trouver tout le niveau courant
-            for id in cofeuilles:
-                res[-1].append(id)
-                g_copy.remove_node_by_id(id)
             if not cofeuilles:
                 raise ValueError("Le graphe est cyclique, tri topologique impossible")
+            # On retire les feuilles après avoir trouver tout le niveau courant
+            res.append(cofeuilles)
+            for id in cofeuilles:
+                g_copy.remove_node_by_id(id)
+            
         return res
     def profondeur_noeud(self, id_noeud):
         tri = self.tri_topologique()
