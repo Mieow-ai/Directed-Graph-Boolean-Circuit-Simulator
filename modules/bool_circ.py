@@ -140,6 +140,19 @@ class bool_circ(open_digraph):
             path.append(src)
             path.reverse()
         return distance, path
+
+    def ancetres_communs_dist(self, id1, id2):
+        node1 = self.get_node_by_id(id1)
+        node2 = self.get_node_by_id(id2)
+        dist1, _ = self.longueurs_bfs(node1, direction=-1)
+        dist2, _ = self.longueurs_bfs(node2, direction=-1)
+        resultat = {}
+        for id in dist1.keys():
+            if id in dist2:
+                # ancêtre commun
+                resultat[id] = (dist1[id], dist2[id])
+        return resultat
+
                             
         
                 

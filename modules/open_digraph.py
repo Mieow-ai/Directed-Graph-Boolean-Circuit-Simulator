@@ -222,10 +222,14 @@ class open_digraph: # for open directed graph
     def remove_node_by_id(self, node_id):
         if node_id in self.nodes:
             for parent_id in list(self.nodes[node_id].get_parents().keys()):
-                self.remove_edge(parent_id, node_id)
+                self.remove_parallel_edges(parent_id, node_id)
             for child_id in list(self.nodes[node_id].get_children().keys()):
-                self.remove_edge(node_id, child_id)
+                self.remove_parallel_edges(node_id, child_id)
             del self.nodes[node_id]
+            if node_id in self.inputs:
+                self.inputs.remove(node_id)
+            if node_id in self.outputs:
+                self.outputs.remove(node_id)
         else:
             raise ValueError(f"Node_id {node_id} pas dans le graphe")
         
