@@ -75,4 +75,58 @@ class bool_circ(open_digraph):
             if parents and children:
                 combined.add_edge(parents[0], children[0])
         return bool_circ(combined)
-            
+    
+    def longueurs_dfs(self, src, direction = 1) :
+        prev = {}
+        dist = {}
+        if direction == 1:
+            self.longueurs_aux(src, prev,dist, 0, None)
+            return prev,dist
+        elif direction == -1:
+            self.longueurs_aux2(src, prev,dist, 0, None)
+            return prev,dist
+        else:
+            prev1, dist1 = self.longueurs_dfs(src, direction = 1)
+            prev2, dist2 = self.longueurs_dfs(src, direction = -1)
+            return prev1 | prev2,  dist1 | dist2
+        
+                
+    def longueurs_aux(self, src, prev,dist, current_dist, parent):
+            childs = self.get_node_by_id(src).get_children()
+            if src not in dist or dist[src] > current_dist:
+                dist[src] = current_dist
+                prev[src] = parent
+                for child in childs.keys():
+                    self.longueurs_aux(child, prev, dist, current_dist + 1, src)
+                
+    def longueurs_aux2(self, src, prev,dist, current_dist, enfant):
+            parents = self.get_node_by_id(src).get_parents()
+            if src not in dist or dist[src] > current_dist:
+                dist[src] = current_dist
+                prev[src] = enfant
+                for parent in parents.keys():
+                    self.longueurs_aux2(parent, prev, dist, current_dist + 1, src)         
+
+    def longueurs_bfs(self, src, direction=1, tgt = None):
+        dist = {src: 0}
+        prev = {}
+        queue = [src]
+        while queue:
+            current = queue.pop(0)
+            noeud = self.get_node_by_id(current)
+            voisins = []
+            if direction == 1 or direction is None:
+                voisins.extend(list(noeud.get_children().keys()))
+            if direction == -1 or direction is None:
+                voisins.extend(list(noeud.get_parents().keys()))
+            for voisin in voisins:
+                if voisin not in dist:
+                    dist[voisin] = dist[current] + 1
+                    prev[voisin] = current
+                    if voisin == tgt:
+                        return dist, prev
+                    queue.append(voisin)
+        return dist, prev
+                        
+        
+                
