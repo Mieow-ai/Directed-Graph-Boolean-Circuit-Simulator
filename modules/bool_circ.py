@@ -1,9 +1,7 @@
 import sys
 import os
-try:
-    from open_digraph import open_digraph
-except ImportError:
-    from modules.open_digraph import open_digraph
+from open_digraph import open_digraph
+
 
 class bool_circ(open_digraph):
     def __init__(self, g):
@@ -169,13 +167,50 @@ class bool_circ(open_digraph):
             res.append(cofeuilles)
             for id in cofeuilles:
                 g_copy.remove_node_by_id(id)
-            
         return res
+    
     def profondeur_noeud(self, id_noeud):
         tri = self.tri_topologique()
         for i in range(len(tri)):
             if id_noeud in tri[i]:
                 return i
         raise ValueError("l'id n'est pas dans le graphe")
+    def profondeur(self):
+        tri = self.tri_topologique()
+        return len(tri)
+    def longest_path(self,u,v):
+        tri_topo = self.tri_topologique()
+        prof_u = self.profondeur_noeud(u)
+        prof_v = self.profondeur_noeud(v)
+        if(prof_u >= prof_v):
+            return None
+        else:
+            dist = {u : 0}
+            prev = {}
+            for profondeur in range(prof_u+1, prof_v+1):
+                for id in tri_topo[profondeur]:
+                    parents = self.get_node_by_id(id).get_parents()
+                    for id_parent in parents:
+                        if id_parent in dist.keys():
+                            if(id in dist.keys()):
+                                if(dist[id_parent]+1>dist[id]):
+                                    dist[id] = dist[id_parent]+1
+                                    prev[id] = id_parent
+                            else:
+                                dist[id] = dist[id_parent]+1
+                                prev[id] = id_parent   
+                    if id == v:
+                        path = []
+                        distance = dist[v] if v in dist else None 
+                        if distance is not None:
+                            current = v
+                            while current != u:
+                                path.append(current)
+                                current = prev[current]
+                            path.append(u)
+                            path.reverse()
+                            return distance, path
+        return None
+            
 
-                
+
