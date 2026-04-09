@@ -182,56 +182,87 @@ class InitTest(unittest.TestCase):
         os.remove('test.dot')
     
     def test_compo_parallele(self):
+        # Composition de deux graphes vides est un graphe vide
         g_vide = open_digraph.empty()
         b_vide = bool_circ(g_vide)
         res_vide = b_vide.compo_parallele(b_vide)
         self.assertEqual(len(res_vide.get_nodes()), 0)
         self.assertEqual(len(res_vide.inputs_ids()), 0)
+        self.assertEqual(len(res_vide.outputs_ids()), 0)
         
+        # Composition à gauche et à droite d’un graphe f avec l’élément neutre et vérification que f n’est pas modifié
         g1 = open_digraph.empty()
         n1 = g1.add_node()
         g1.add_input_id(n1)
         b1 = bool_circ(g1)
         
-        res_neutre = b_vide.compo_parallele(b1)
-        self.assertEqual(len(res_neutre.get_nodes()), 1)
-        self.assertEqual(len(res_neutre.inputs_ids()), 1)
+        res_gauche = b_vide.compo_parallele(b1)
+        self.assertEqual(res_gauche, b1)
         
+        res_droite = b1.compo_parallele(b_vide)
+        self.assertEqual(res_droite, b1)
+        
+        # Composition de deux graphes f et g, vérification que le nombre total de noeuds, d’entrée et de sortie est identique à la somme des nombres correspondants pour f et g.
         g2 = open_digraph.empty()
         n2 = g2.add_node()
+        n3 = g2.add_node()
+        n4 = g2.add_node()
+        g2.add_input_id(n3)
         g2.add_output_id(n2)
         b2 = bool_circ(g2)
         
         res_parallele = b1.compo_parallele(b2)
-        self.assertEqual(len(res_parallele.get_nodes()), 2)
-        self.assertEqual(len(res_parallele.inputs_ids()), 1)
-        self.assertEqual(len(res_parallele.outputs_ids()), 1)
+        self.assertEqual(len(res_parallele.get_nodes()), len(b1.get_nodes()) + len(b2.get_nodes()))
+        self.assertEqual(len(res_parallele.inputs_ids()), len(b1.inputs_ids()) + len(b2.inputs_ids()))
+        self.assertEqual(len(res_parallele.outputs_ids()), len(b1.outputs_ids()) + len(b2.outputs_ids()))
 
     def test_compo_sequentielle(self):
+        g_vide = open_digraph.empty()
+        b_vide = bool_circ(g_vide)
+        
         g1 = open_digraph.empty()
-        g2 = open_digraph.empty()
         n1 = g1.add_node()
         g1.add_output_id(n1)
         b1 = bool_circ(g1)
-        b2 = bool_circ(g2)
         
+        g2 = open_digraph.empty()
+        g2.add_input_id(g2.add_node())
+        g2.add_input_id(g2.add_node())
+        b2 = bool_circ(g2)
+
+        # Composition de graphes incompatibles, vérification que l’erreur est bien renvoyée
         with self.assertRaises(ValueError):
             b1.compo_sequentielle(b2) 
-    
-        g3 = open_digraph.empty()
-        n3 = g3.add_node()
-        g3.add_output_node(n3)
-        b3 = bool_circ(g3)
+
+        # Composition d’un graphe non vide et du graphe vide (incompatible)
+        with self.assertRaises(ValueError):
+            # b1 a 1 sortie, b_vide a 0 entrée -> incompatible
+            b1.compo_sequentielle(b_vide) 
+
+        # Composition de deux graphes vides
+        res_vide = b_vide.compo_sequentielle(b_vide)
+        self.assertEqual(len(res_vide.get_nodes()), 0)
+        self.assertEqual(len(res_vide.inputs_ids()), 0)
+        self.assertEqual(len(res_vide.outputs_ids()), 0)
+
+        # Composition f et g compatibles et vérification que le nombre total de noeud est égale à la somme du nombre de noeuds de f et de g moins le nombre d’entrées de g et de sorties de f, vérification que le nombre d’entrées du graphe résultat est le nombre d’entrées de f et que son nombre de sorties est celui de g.
+        f = open_digraph.empty()
+        n0 = f.add_node()
+        n1 = f.add_node()
+        f.add_edge(n0, n1)
+        f.add_input_node(n0)
+        f.add_output_node(n1)
+        b_f = bool_circ(f)
         
-        g4 = open_digraph.empty()
-        n4 = g4.add_node()
-        g4.add_input_node(n4)
-        b4 = bool_circ(g4)
+        g = open_digraph.empty()
+        g.add_input_node(g.add_node())
+        b_g = bool_circ(g)
         
-        res_seq = b3.compo_sequentielle(b4)
-        self.assertEqual(len(res_seq.get_nodes()), 2)
-        self.assertEqual(len(res_seq.outputs_ids()), 0)
-        self.assertEqual(len(res_seq.inputs_ids()), 0)
+        res = b_f.compo_sequentielle(b_g)
+        expected_nodes = len(b_f.get_nodes()) + len(b_g.get_nodes()) - len(b_g.inputs_ids()) - len(b_f.outputs_ids())
+        self.assertEqual(len(res.get_nodes()), expected_nodes)
+        self.assertEqual(len(res.inputs_ids()), len(b_f.inputs_ids()))
+        self.assertEqual(len(res.outputs_ids()), len(b_g.outputs_ids()))
 
         
 

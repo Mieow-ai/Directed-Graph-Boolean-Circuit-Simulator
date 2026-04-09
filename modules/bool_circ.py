@@ -1,6 +1,6 @@
 import sys
 import os
-from open_digraph import open_digraph
+from modules.open_digraph import open_digraph
 
 
 class bool_circ(open_digraph):
@@ -51,7 +51,7 @@ class bool_circ(open_digraph):
     
     def compo_sequentielle(self, other):
         if (len(self.outputs_ids()) != len(other.inputs_ids())):
-            raise ValueError("Il faut avoir le même nombre de sorties dans le premier circuit et d'entrées dans le second")
+            raise ValueError("Graphes incompatibles (le nombre de sorties de f doit être égal au nombre d'entrées de g)")
         f = self.copy()
         shift = (f.max_id() + 1) if f.max_id() is not None else 0
         g = other.shift_indices(shift)
