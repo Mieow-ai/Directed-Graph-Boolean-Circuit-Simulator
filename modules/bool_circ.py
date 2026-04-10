@@ -245,6 +245,7 @@ class bool_circ(open_digraph):
                 if id1 != id2:
                     if b.get_node_by_id(id1).get_label() == b.get_node_by_id(id2).get_label():
                         b.merge_nodes(id1, id2)
+                        niveau1_id.remove(id2)
         return b
     
         

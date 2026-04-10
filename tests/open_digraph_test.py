@@ -268,7 +268,7 @@ class InitTest(unittest.TestCase):
         # Test de la formule "a AND b"
         formula = "((x0)&((x1)&(x2)))|((x1)&(~(x2)))"
         tree = bool_circ.formula_to_tree(formula)
-        # tree.display(True)
+        tree.display(True)
         
     
 
