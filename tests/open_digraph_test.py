@@ -177,7 +177,7 @@ class InitTest(unittest.TestCase):
     def test_dot_file(self):
         self.g.save_as_dot_file('test.dot')
         g2 = open_digraph.from_dot_file('test.dot')
-        self.g.display(True)
+        # self.g.display(True)
         self.assertEqual(self.g, g2)
         os.remove('test.dot')
     
@@ -264,7 +264,13 @@ class InitTest(unittest.TestCase):
         self.assertEqual(len(res.inputs_ids()), len(b_f.inputs_ids()))
         self.assertEqual(len(res.outputs_ids()), len(b_g.outputs_ids()))
 
+    def test_formula_to_tree(self):
+        # Test de la formule "a AND b"
+        formula = "((x0)&((x1)&(x2)))|((x1)&(~(x2)))"
+        tree = bool_circ.formula_to_tree(formula)
+        # tree.display(True)
         
+    
 
 if __name__ == '__main__': 
     unittest.main()        

@@ -566,3 +566,31 @@ class open_digraph: # for open directed graph
             c_id = comp_dict[out_id]
             graphs[c_id].add_output_id(out_id)
         return graphs
+    
+    def merge_nodes(self, id1, id2):
+        n1 = self.get_node_by_id(id1)
+        n2 = self.get_node_by_id(id2)
+        if n1.get_label() != n2.get_label():
+            raise ValueError("Pas les mêmes labels")
+        n2_parents = n2.get_parents().copy()
+        n2_enfants = n2.get_children().copy()
+        for p_id, multiplicite in n2_parents.items():
+            if p_id == id2:
+                self.add_edgeM(id1, id1, multiplicite)
+            else :
+                self.add_edgeM(p_id, id1, multiplicite)
+        for c_id, multiplicite in n2_enfants.items():
+            if c_id == id2:
+                self.add_edgeM(id1, id1, multiplicite)
+            else:
+                self.add_edgeM(id1, c_id, multiplicite)
+        if id2 in self.inputs and id1 not in self.inputs:
+            self.add_input_node(n1)
+        if id2 in self.outputs and id1 not in self.outputs:
+            self.add_output_node(n2)
+        self.remove_node_by_id(id2)
+        
+            
+        
+        
+        

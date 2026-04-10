@@ -211,6 +211,43 @@ class bool_circ(open_digraph):
                             path.reverse()
                             return distance, path
         return None
-            
+      
+    @classmethod      
+    def formula_to_tree(cls, s):
+        g = open_digraph.empty()
+        b = bool_circ(g)
 
+        current_node_id = b.add_node()
+        current_node = b.get_node_by_id(current_node_id)
+        sortie_id = b.add_node()
+        b.add_output_id(sortie_id)
+        b.add_edge(current_node_id, sortie_id)
+        
+        s2 = ""
+        for char in s:
+            if char == '(':
+                current_node.set_label(current_node.get_label() + s2)
+                nouveau_parent_id = b.add_node()
+                b.add_edge(nouveau_parent_id,current_node.get_id())
+                current_node = b.get_node_by_id(nouveau_parent_id)
+                s2 = ""
+            elif char == ')':
+                current_node.set_label(current_node.get_label() + s2)
+                current_node = b.get_node_by_id(list(current_node.get_children().keys())[0])
+                s2 = ""
+            else:
+                s2 += char
+                
+        tri_topo = b.tri_topologique()
+        niveau1_id = tri_topo[0]
+        for id1 in niveau1_id:
+            for id2 in niveau1_id:
+                if id1 != id2:
+                    if b.get_node_by_id(id1).get_label() == b.get_node_by_id(id2).get_label():
+                        b.merge_nodes(id1, id2)
+        return b
+    
+        
+        
+                
 
