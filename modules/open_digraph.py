@@ -545,15 +545,16 @@ class open_digraph: # for open directed graph
                 while queue:
                     current_id = queue.pop(0)
                     current_node = self.get_node_by_id(current_id)
-                    neighbors = list(current_node.get_parents().keys()) + list(current_node.get_children().keys())
-                    for neighbor_id in neighbors:
-                        if neighbor_id not in comp_dict:
-                            comp_dict[neighbor_id] = comp_id
-                            queue.append(neighbor_id)
+                    voisin = list(current_node.get_parents().keys()) + list(current_node.get_children().keys())
+                    for voisin_id in voisin:
+                        if voisin_id not in comp_dict:
+                            comp_dict[voisin_id] = comp_id
+                            queue.append(voisin_id)
                 comp_id += 1
         return comp_id, comp_dict
     
     def connected_components_graphs(self):
+        (inputs_globaux, outputs_globaux) = (self.inputs_ids().copy(), self.outputs_ids().copy())
         num_comps, comp_dict = self.connected_components()
         graphs = [open_digraph.empty() for _ in range(num_comps)]
         for node_id, c_id in comp_dict.items():
@@ -565,7 +566,7 @@ class open_digraph: # for open directed graph
         for out_id in self.outputs_ids():
             c_id = comp_dict[out_id]
             graphs[c_id].add_output_id(out_id)
-        return graphs
+        return graphs,(inputs_globaux, outputs_globaux)
     
     def merge_nodes(self, id1, id2):
         n1 = self.get_node_by_id(id1)

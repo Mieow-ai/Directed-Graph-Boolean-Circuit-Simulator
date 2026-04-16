@@ -268,9 +268,142 @@ class InitTest(unittest.TestCase):
         # Test de la formule "a AND b"
         formula = "((x0)&((x1)&(x2)))|((x1)&(~(x2)))"
         tree = bool_circ.formula_to_tree(formula)
-        tree.display(True)
+        # tree.display(True)
         
-    
+    def test_ancetres_communs_dist(self):
+        g = open_digraph.empty()
+        for i in range(10):
+            g.add_node(id=i, label=str(i))
+        edges = [(0, 3), (1, 4), (1, 5), (1, 8),(2, 4),(3, 5), 
+        (3, 6), (3, 7),(4, 6),(5, 7),(6, 8), (6, 9)]
+        g.add_edges(edges)
+        b = bool_circ(g)
+        res = b.ancetres_communs_dist(5, 8)
+        self.assertEqual(res, {0: (2, 3), 3: (1, 2), 1: (1, 1)})
+
+    def test_longueurs_bfs(self):
+        g = open_digraph.empty()
+        for i in range(10):
+            g.add_node(id=i)
+        edges = [(0, 3), (1, 4), (1, 5), (1, 8),(2, 4),(3, 5), 
+        (3, 6), (3, 7),(4, 6),(5, 7),(6, 8), (6, 9)]
+        g.add_edges(edges)
+        b = bool_circ(g)
+        
+        dist, prev = b.longueurs_bfs(3, direction=1)
+        self.assertEqual(dist, {3: 0, 5: 1, 6: 1, 7: 1, 8: 2, 9: 2})
+        self.assertEqual(prev, {5: 3, 6: 3, 7: 3, 8: 6, 9: 6})
+        
+        dist2, prev2 = b.longueurs_bfs(8, direction=-1)
+        self.assertEqual(dist2, {8: 0, 1: 1, 6: 1, 3: 2, 4: 2, 0: 3, 2: 3})
+        self.assertEqual(prev2[3], 6)
+        self.assertEqual(prev2[4], 6)
+        self.assertEqual(prev2[0], 3)
+        self.assertEqual(prev2[2], 4)
+
+    def test_shortest_path(self):
+        g = open_digraph.empty()
+        for i in range(10):
+            g.add_node(id=i, label=str(i))
+        edges = [(0, 3), (1, 4), (1, 5), (1, 8),(2, 4),(3, 5), 
+        (3, 6), (3, 7),(4, 6),(5, 7),(6, 8), (6, 9)]
+        g.add_edges(edges)
+        b = bool_circ(g)
+        
+        dist, path = b.shortest_path(3, 8)
+        self.assertEqual(dist, 2)
+        self.assertEqual(path, [3, 6, 8])
+        
+        dist2, path2 = b.shortest_path(1, 9)
+        self.assertEqual(dist2, 3)
+        self.assertTrue(path2 == [1, 3, 6, 9] or path2 == [1, 4, 6, 9])
+        
+        # Test de chemin impossible
+        dist3, path3 = b.shortest_path(7, 0) #Implicitement direction = 1
+        self.assertIsNone(dist3)
+        self.assertEqual(path3, [])
+
+    def test_tri_topologique(self):
+        g = open_digraph.empty()
+        for i in range(10):
+            g.add_node(id=i)
+        edges = [(0, 3), (1, 4), (1, 5), (1, 8),(2, 4),(3, 5), 
+        (3, 6), (3, 7),(4, 6),(5, 7),(6, 8), (6, 9)]
+        g.add_edges(edges)
+        b = bool_circ(g)
+        
+        tri = b.tri_topologique()
+        attendu = [{0, 1, 2}, {3, 4}, {5, 6}, {7, 8, 9}]
+        self.assertEqual(tri, attendu)
+
+
+    def test_longest_path(self):
+        g = open_digraph.empty()
+        for i in range(10):
+            g.add_node(id=i)
+        edges = [(0, 3), (1, 4), (1, 5), (1, 8),(2, 4),(3, 5), 
+        (3, 6), (3, 7),(4, 6),(5, 7),(6, 8), (6, 9)]
+        g.add_edges(edges)
+        b = bool_circ(g)
+        
+        # 1 à 5
+        dist, path = b.longest_path(1, 5)
+        self.assertEqual(dist, 1) # Pas 2 car (1,3) n'existe 
+        
+        # 1 à 3 (impossible)
+        res = b.longest_path(1, 3)
+        self.assertIsNone(res)
+        
+        # 1 à 8 
+        dist2, path2 = b.longest_path(1, 8)
+        self.assertEqual(dist2, 3) # Pas 1
+
+    def test_identity(self):
+        g_id = open_digraph.identity(3)
+        self.assertTrue(g_id.well_formed())
+        self.assertEqual(len(g_id.get_nodes()), 6)
+        self.assertEqual(len(g_id.inputs_ids()), 3)
+        self.assertEqual(len(g_id.outputs_ids()), 3)
+        
+        # Composition séquentielle avec l'élément neutre
+        # Graphe quelconque f avec 2 entrées et 3 sorties
+        f_graph = open_digraph.empty()
+        in1 = f_graph.add_node()
+        in2 = f_graph.add_node()
+        out1 = f_graph.add_node()
+        out2 = f_graph.add_node()
+        out3 = f_graph.add_node()
+        f_graph.add_input_node(in1)
+        f_graph.add_input_node(in2)
+        f_graph.add_output_node(out1)
+        f_graph.add_output_node(out2)
+        f_graph.add_output_node(out3)
+        
+        n1 = f_graph.add_node();
+        n2 = f_graph.add_node();
+        n3 = f_graph.add_node();
+        
+        f_graph.add_edge(in1, n1)
+        f_graph.add_edge(in2, n2)
+        f_graph.add_edge(n1, n3)
+        f_graph.add_edge(n1, out1)
+        f_graph.add_edge(n2, out2)
+        f_graph.add_edge(n3, out3)
+        
+        b = bool_circ(f_graph)
+        b_id_droite = bool_circ(open_digraph.identity(3)) # f à 3 sorties
+        b_id_gauche = bool_circ(open_digraph.identity(2)) # f à 2 entrées
+        
+        compo_droite = b.compo_sequentielle(b_id_droite)
+        compo_gauche = b_id_gauche.compo_sequentielle(b)
+        
+        self.assertEqual(len(compo_droite.get_nodes()), len(b.get_nodes()))
+        self.assertEqual(len(compo_droite.inputs_ids()), len(b.inputs_ids()))
+        self.assertEqual(len(compo_droite.outputs_ids()), len(b.outputs_ids()))
+        
+        self.assertEqual(len(compo_gauche.get_nodes()), len(b.get_nodes()))
+        self.assertEqual(len(compo_gauche.inputs_ids()), len(b.inputs_ids()))
+        self.assertEqual(len(compo_gauche.outputs_ids()), len(b.outputs_ids()))
 
 if __name__ == '__main__': 
     unittest.main()        

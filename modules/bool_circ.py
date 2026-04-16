@@ -140,10 +140,8 @@ class bool_circ(open_digraph):
         return distance, path
 
     def ancetres_communs_dist(self, id1, id2):
-        node1 = self.get_node_by_id(id1)
-        node2 = self.get_node_by_id(id2)
-        dist1, _ = self.longueurs_bfs(node1, direction=-1)
-        dist2, _ = self.longueurs_bfs(node2, direction=-1)
+        dist1, _ = self.longueurs_bfs(id1, direction=-1)
+        dist2, _ = self.longueurs_bfs(id2, direction=-1)
         resultat = {}
         for id in dist1.keys():
             if id in dist2:
@@ -157,10 +155,10 @@ class bool_circ(open_digraph):
         g_copy = self.copy()
         res = []
         while len(g_copy.get_nodes()) > 0:
-            cofeuilles = []
+            cofeuilles = set()
             for id_noeud, noeud in g_copy.get_id_node_map().items():
                 if noeud.indegree() == 0:
-                    cofeuilles.append(id_noeud)
+                    cofeuilles.add(id_noeud)
             if not cofeuilles:
                 raise ValueError("Le graphe est cyclique, tri topologique impossible")
             # On retire les feuilles après avoir trouver tout le niveau courant
@@ -173,11 +171,12 @@ class bool_circ(open_digraph):
         tri = self.tri_topologique()
         for i in range(len(tri)):
             if id_noeud in tri[i]:
-                return i
+                return i+1
         raise ValueError("l'id n'est pas dans le graphe")
     def profondeur(self):
         tri = self.tri_topologique()
         return len(tri)
+    
     def longest_path(self,u,v):
         tri_topo = self.tri_topologique()
         prof_u = self.profondeur_noeud(u)
@@ -187,8 +186,8 @@ class bool_circ(open_digraph):
         else:
             dist = {u : 0}
             prev = {}
-            for profondeur in range(prof_u+1, prof_v+1):
-                for id in tri_topo[profondeur]:
+            for profondeur in range(prof_u, prof_v):
+                for id in tri_topo[profondeur]: 
                     parents = self.get_node_by_id(id).get_parents()
                     for id_parent in parents:
                         if id_parent in dist.keys():
@@ -240,13 +239,17 @@ class bool_circ(open_digraph):
                 
         tri_topo = b.tri_topologique()
         niveau1_id = tri_topo[0]
-        for id1 in niveau1_id:
-            for id2 in niveau1_id:
-                if id1 != id2:
+        
+        liste_ids = list(niveau1_id)
+        for id1 in liste_ids:
+            for id2 in liste_ids:
+                if id1 != id2 and id1 in niveau1_id and id2 in niveau1_id:
                     if b.get_node_by_id(id1).get_label() == b.get_node_by_id(id2).get_label():
                         b.merge_nodes(id1, id2)
                         niveau1_id.remove(id2)
         return b
+    
+    
     
         
         
