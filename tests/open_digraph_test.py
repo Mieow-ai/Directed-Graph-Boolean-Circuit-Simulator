@@ -406,7 +406,14 @@ class InitTest(unittest.TestCase):
         formula = "((x0)&((x1)&(x2)))|((x1)&(~(x2)))"
         tree,ids = bool_circ.formula_to_tree(formula)
         self.assertEqual(ids, ["x0", "x1", "x2"])
+        #tree.display(True)
+
+    def test_formula_to_treeExtend(self):
+        # Test de la formule "a AND b"
+        tree,ids = bool_circ.formula_to_treeExtend("((x0)&((x1)&(x2)))|((x1)&(~(x2)))", "((x0)&(~(x1)))|(x2)")
+        self.assertEqual(ids, ["x0", "x1", "x2"])
         tree.display(True)
+
 
 if __name__ == '__main__': 
     unittest.main()        

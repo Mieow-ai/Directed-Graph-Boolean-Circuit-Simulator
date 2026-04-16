@@ -262,9 +262,56 @@ class bool_circ(open_digraph):
                
         return b,inputs_list
     
-    
-    
-        
-        
-                
+    @classmethod      
+    def formula_to_treeExtend(cls, *args):
+        g = open_digraph.empty()
+        b = bool_circ(g)
 
+      
+        
+        for s in args:
+            current_node_id = b.add_node()
+            current_node = b.get_node_by_id(current_node_id)
+            sortie_id = b.add_node()
+            b.add_output_id(sortie_id)
+            b.add_edge(current_node_id, sortie_id)
+            s2 = ""
+            for char in s:
+                if char == '(':
+                    current_node.set_label(current_node.get_label() + s2)
+                    nouveau_parent_id = b.add_node()
+                    b.add_edge(nouveau_parent_id,current_node.get_id())
+                    current_node = b.get_node_by_id(nouveau_parent_id)
+                    s2 = ""
+                elif char == ')':
+                    current_node.set_label(current_node.get_label() + s2)
+                    current_node = b.get_node_by_id(list(current_node.get_children().keys())[0])
+                    s2 = ""
+                else:
+                    s2 += char
+                
+        tri_topo = b.tri_topologique()
+        niveau1_id = tri_topo[0]
+        
+        liste_ids = list(niveau1_id)
+        for id1 in liste_ids:
+            for id2 in liste_ids:
+                if id1 != id2 and id1 in niveau1_id and id2 in niveau1_id:
+                    if b.get_node_by_id(id1).get_label() == b.get_node_by_id(id2).get_label():
+                        b.merge_nodes(id1, id2)
+                        niveau1_id.remove(id2)
+        # On modifie pour ajouter des noeuds d'entrées liées aux noeuds de copies
+        tri_topo = b.tri_topologique()
+        niveau1_id = tri_topo[0]
+        liste_ids = list(niveau1_id)
+        inputs_list = []
+        for id1 in liste_ids:
+            input_id = b.add_node()
+            b.add_input_id(input_id)
+            b.add_edge(input_id, id1)
+            node_id1 = b.get_node_by_id(id1)
+            inputs_list.append(node_id1.get_label())
+            node_id1.set_label("") 
+               
+        return b,inputs_list
+        
