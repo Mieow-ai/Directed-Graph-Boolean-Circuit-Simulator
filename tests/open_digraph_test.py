@@ -264,11 +264,6 @@ class InitTest(unittest.TestCase):
         self.assertEqual(len(res.inputs_ids()), len(b_f.inputs_ids()))
         self.assertEqual(len(res.outputs_ids()), len(b_g.outputs_ids()))
 
-    def test_formula_to_tree(self):
-        # Test de la formule "a AND b"
-        formula = "((x0)&((x1)&(x2)))|((x1)&(~(x2)))"
-        tree = bool_circ.formula_to_tree(formula)
-        # tree.display(True)
         
     def test_ancetres_communs_dist(self):
         g = open_digraph.empty()
@@ -404,6 +399,14 @@ class InitTest(unittest.TestCase):
         self.assertEqual(len(compo_gauche.get_nodes()), len(b.get_nodes()))
         self.assertEqual(len(compo_gauche.inputs_ids()), len(b.inputs_ids()))
         self.assertEqual(len(compo_gauche.outputs_ids()), len(b.outputs_ids()))
+
+
+    def test_formula_to_tree(self):
+        # Test de la formule "a AND b"
+        formula = "((x0)&((x1)&(x2)))|((x1)&(~(x2)))"
+        tree,ids = bool_circ.formula_to_tree(formula)
+        self.assertEqual(ids, ["x0", "x1", "x2"])
+        tree.display(True)
 
 if __name__ == '__main__': 
     unittest.main()        
