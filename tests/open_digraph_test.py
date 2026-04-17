@@ -421,9 +421,10 @@ class InitTest(unittest.TestCase):
         edges = [(0, 3), (1, 4), (1, 5), (1, 8),(2, 4),(3, 5), 
         (3, 6), (3, 7),(4, 6),(5, 7),(6, 8), (6, 9)]
         g.add_edges(edges)
-        g.save_as_dot_file("test_acyclicToBoolRandomBefore.dot")
-        b = bool_circ.acyclicToBoolRandom(g)
-        b.save_as_dot_file("test_acyclicToBoolRandomAfter.dot")
+        #g.save_as_dot_file("test_acyclicToBoolRandomBefore.dot")
+        b = bool_circ.acyclicToBoolRandom(g,nbOutput=4)
+        #b.save_as_dot_file("test_acyclicToBoolRandomAfter.dot")
+        print(len(b.outputs_ids()))
         b.display()
 
 

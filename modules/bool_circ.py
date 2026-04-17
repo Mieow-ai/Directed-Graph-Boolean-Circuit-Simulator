@@ -11,7 +11,7 @@ class bool_circ(open_digraph):
             raise ValueError("Le graphe fourni n'est pas un circuit booléen valide (acyclique avec contraintes de degré respectées)")
         
     @classmethod      
-    def acyclicToBoolRandom(cls, g):
+    def acyclicToBoolRandom(cls, g, nbInput=None,nbOutput=None):
         if g.is_cyclic():
             raise ValueError("Le graphe n'est pas acyclique, impossible")
         else:
@@ -25,7 +25,6 @@ class bool_circ(open_digraph):
                     id_entree = b.add_node()
                     b.add_input_id(id_entree)
                     b.add_edge(id_entree, id_noeud)
-       
         # Plusieurs parents -> opérateur logique
             elif noeud.indegree() > 1:
                 a = random.randint(0,1)
@@ -41,10 +40,12 @@ class bool_circ(open_digraph):
                     for id_enfant in noeud.get_children().keys():
                         b.add_edge(id_copie, id_enfant)
                         b.remove_parallel_edges(id_noeud, id_enfant) # On retire entièrement les arêtes
+                # Si pas d'enfant c'est aussi une sortie 
                 elif noeud.outdegree() == 0:           
                     id_sortie = b.add_node()
                     b.add_output_id(id_sortie)
                     b.add_edge(id_noeud, id_sortie)
+            # 1 parent -> c'est soit un noeud de copie soit une sortie
             elif noeud.indegree() == 1:
                 a = random.randint(0,1)
                 label = ""
@@ -65,6 +66,61 @@ class bool_circ(open_digraph):
                 b.get_node_by_id(id_noeud).set_label(label)
             else: # cas 0,0, on enlève le noeud
                 b.remove_node_by_id(id_noeud)
+
+        if nbOutput!=None:
+            if nbOutput <1:
+                raise ValueError("Le nombre de sorties doit être supérieur ou égal à 1")
+            # Si il y a plus d'ouputs que ce qui est voulu alors on fusionne des sorties avec un opérateur binaire au hasard
+            # On relie directements l'unique parent de chaque sortie à l'opérateur
+            while len(b.outputs_ids()) > nbOutput:
+                id1, id2 = random.sample(b.outputs_ids(), 2)
+                id_parent1 = list(b.get_node_by_id(id1).get_parents().keys())[0]
+                id_parent2 = list(b.get_node_by_id(id2).get_parents().keys())[0]
+                b.remove_node_by_id(id1)
+                b.remove_node_by_id(id2) # Supprime directement les arêtes associées
+                id_op = b.add_node()
+                b.add_edge(id_parent1, id_op)
+                b.add_edge(id_parent2, id_op)
+                id_sortie = b.add_node()
+                b.add_output_id(id_sortie)
+                b.add_edge(id_op, id_sortie)
+                node_op = b.get_node_by_id(id_op)
+                label = ["|", "&"][random.randint(0,1)]
+                node_op.set_label(label)
+            while len(b.outputs_ids()) < nbOutput:
+                id_noeud = random.choice(list(b.get_id_node_map().keys()))
+                if id_noeud in b.outputs_ids():
+                    continue
+                id_sortie = b.add_node()
+                b.add_output_id(id_sortie)
+                noeud=b.get_node_by_id(id_noeud)
+                # Si jamais le noeud choisi est un noeud d'operation alors il est nécessaire de d'ajouter un noeud de copie
+                if noeud.get_label() == "~" or noeud.get_label() == "&" or noeud.get_label() == "|":
+                    noeud_copie_id = b.add_node()
+                    for id_enfant in list(noeud.get_children().keys()):
+                        b.add_edge(noeud_copie_id, id_enfant)
+                        b.remove_parallel_edges(id_noeud, id_enfant) 
+                    b.add_edge(id_noeud, noeud_copie_id)
+                    b.add_edge(noeud_copie_id, id_sortie)
+                elif noeud.indegree() == 0: # Si c'est une entrée, elle a un seul enfant
+                    id_enfant = list(noeud.get_children().keys())[0] # On récupère l'id du noeud de copie
+                    noeud_enfant = b.get_node_by_id(id_enfant)
+                    if noeud_enfant.get_label() != "":
+                        id_copie = b.add_node()
+                        for id_enfant2 in list(noeud.get_children().keys()):
+                            b.remove_parallel_edges(id_noeud, id_enfant2)
+                            b.add_edge(id_copie, id_enfant2)   
+                        b.add_edge(id_noeud, id_copie)
+                        b.add_edge(id_copie, id_sortie)
+                    else: #Sinon l'enfant est un noeud de copie, on peut directement le relier à la sortie
+                        b.add_edge(id_enfant, id_sortie)
+                #Sinon c'est un noeud de copie, on peut directement le relier à la sortie
+                else:
+                    b.add_edge(id_noeud, id_sortie)
+                    
+
+
+
         return bool_circ(b)
 
     

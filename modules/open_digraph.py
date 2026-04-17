@@ -175,6 +175,8 @@ class open_digraph: # for open directed graph
         self.inputs.append(input_id)
     def add_output_id(self, output_id):
         self.outputs.append(output_id)
+    def remove_output_id(self,output_id):
+        self.outputs.remove(output_id)
         
     def new_id(self):
         if len(self.nodes) == 0:
