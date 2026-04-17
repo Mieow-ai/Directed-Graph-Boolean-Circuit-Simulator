@@ -1,5 +1,6 @@
 import sys
 import os
+import random
 from modules.open_digraph import open_digraph
 
 
@@ -9,19 +10,63 @@ class bool_circ(open_digraph):
         if not self.is_well_formed():
             raise ValueError("Le graphe fourni n'est pas un circuit booléen valide (acyclique avec contraintes de degré respectées)")
         
-        
-    def is_cyclic(self):
-        g_copy = self.copy()
-        while len(g_copy.get_nodes()) > 0:
-            feuille_id = None
-            for id_noeud, noeud in g_copy.get_id_node_map().items():
-                if noeud.outdegree() == 0:
-                    feuille_id = id_noeud
-                    break
-            if feuille_id is None:
-                return True
-            g_copy.remove_node_by_id(feuille_id)
-        return False
+    @classmethod      
+    def acyclicToBoolRandom(cls, g):
+        if g.is_cyclic():
+            raise ValueError("Le graphe n'est pas acyclique, impossible")
+        else:
+            b = g.copy()
+        # Si un noeud n'a pas de noeuds parents, c'est une entrée du circuit
+        for id_noeud, noeud in b.copy().get_id_node_map().items():
+            if noeud.indegree() == 0 and noeud.outdegree() > 0:
+                if noeud.outdegree() == 1:
+                    b.add_input_id(id_noeud)
+                else:
+                    id_entree = b.add_node()
+                    b.add_input_id(id_entree)
+                    b.add_edge(id_entree, id_noeud)
+       
+        # Plusieurs parents -> opérateur logique
+            elif noeud.indegree() > 1:
+                a = random.randint(0,1)
+                label = ""
+                if a == 0:
+                    label = "|"
+                else:
+                    label = "&"
+                b.get_node_by_id(id_noeud).set_label(label)
+                if noeud.outdegree() > 1:
+                    id_copie = b.add_node()
+                    b.add_edge(id_noeud, id_copie)
+                    for id_enfant in noeud.get_children().keys():
+                        b.add_edge(id_copie, id_enfant)
+                        b.remove_parallel_edges(id_noeud, id_enfant) # On retire entièrement les arêtes
+                elif noeud.outdegree() == 0:           
+                    id_sortie = b.add_node()
+                    b.add_output_id(id_sortie)
+                    b.add_edge(id_noeud, id_sortie)
+            elif noeud.indegree() == 1:
+                a = random.randint(0,1)
+                label = ""
+                if a == 0:
+                    label = " "
+                else:
+                    label = "~"
+                    if noeud.outdegree() > 1:
+                        id_copie = b.add_node()
+                        b.add_edge(id_noeud, id_copie)
+                        for id_enfant in noeud.get_children().keys():
+                            b.add_edge(id_copie, id_enfant)
+                            b.remove_parallel_edges(id_noeud, id_enfant) # On retire entièrement les arêtes
+                    elif noeud.outdegree() == 0:           
+                        id_sortie = b.add_node()
+                        b.add_output_id(id_sortie)
+                        b.add_edge(id_noeud, id_sortie)
+                b.get_node_by_id(id_noeud).set_label(label)
+            else: # cas 0,0, on enlève le noeud
+                b.remove_node_by_id(id_noeud)
+        return bool_circ(b)
+
     
     def is_well_formed(self):
         if self.is_cyclic():
@@ -267,8 +312,6 @@ class bool_circ(open_digraph):
         g = open_digraph.empty()
         b = bool_circ(g)
 
-      
-        
         for s in args:
             current_node_id = b.add_node()
             current_node = b.get_node_by_id(current_node_id)
