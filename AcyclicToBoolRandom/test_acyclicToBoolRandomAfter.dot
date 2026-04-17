@@ -1,0 +1,34 @@
+Digraph G {
+0 [label="",isInput=True,isOutput=False];
+1 [label="",isInput=False,isOutput=False];
+2 [label="",isInput=True,isOutput=False];
+3 [label=" ",isInput=False,isOutput=False];
+4 [label="|",isInput=False,isOutput=False];
+5 [label="&",isInput=False,isOutput=False];
+6 [label="&",isInput=False,isOutput=False];
+7 [label="&",isInput=False,isOutput=False];
+8 [label="|",isInput=False,isOutput=False];
+9 [label="~",isInput=False,isOutput=False];
+10 [label="",isInput=True,isOutput=False];
+11 [label="",isInput=False,isOutput=False];
+12 [label="",isInput=False,isOutput=True];
+13 [label="",isInput=False,isOutput=True];
+14 [label="",isInput=False,isOutput=True];
+0 -> 3;
+1 -> 4;
+1 -> 5;
+1 -> 8;
+2 -> 4;
+3 -> 5;
+3 -> 6;
+3 -> 7;
+4 -> 6;
+5 -> 7;
+6 -> 11;
+7 -> 12;
+8 -> 13;
+9 -> 14;
+10 -> 1;
+11 -> 8;
+11 -> 9;
+}
