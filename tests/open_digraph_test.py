@@ -422,7 +422,7 @@ class InitTest(unittest.TestCase):
         (3, 6), (3, 7),(4, 6),(5, 7),(6, 8), (6, 9)]
         g.add_edges(edges)
         #g.save_as_dot_file("test_acyclicToBoolRandomBefore.dot")
-        b = bool_circ.acyclicToBoolRandom(g,nbOutput=4)
+        b = bool_circ.acyclicToBoolRandom(g,nbInput=4)
         #b.save_as_dot_file("test_acyclicToBoolRandomAfter.dot")
         print(len(b.outputs_ids()))
         b.display()

@@ -16,24 +16,23 @@ class bool_circ(open_digraph):
             raise ValueError("Le graphe n'est pas acyclique, impossible")
         else:
             b = g.copy()
-        # Si un noeud n'a pas de noeuds parents, c'est une entrée du circuit
+        def labelNoeudBinaire():
+            return ["|", "&"][random.randint(0,1)]
+        def labelNoeudUnaire():
+            return ["~",""][random.randint(0,0)]
+        
         for id_noeud, noeud in b.copy().get_id_node_map().items():
+        # Si un noeud n'a pas de noeuds parents, c'est une entrée du circuit
+        # Auparavant un noeud de copie était créé seulement si le noeud d'entrée avait plus d'un enfant, nous avons finalement choisi de créer un noeud de copie
+        # à chaque fois, ce qui simplifie la fusion dans le cas où le nbInput est spécifié
+        # Nous supprimons les noeuds de copies inutiles à la fin de la fonction
             if noeud.indegree() == 0 and noeud.outdegree() > 0:
-                if noeud.outdegree() == 1:
-                    b.add_input_id(id_noeud)
-                else:
-                    id_entree = b.add_node()
-                    b.add_input_id(id_entree)
-                    b.add_edge(id_entree, id_noeud)
+                id_entree = b.add_node()
+                b.add_input_id(id_entree)
+                b.add_edge(id_entree, id_noeud)
         # Plusieurs parents -> opérateur logique
             elif noeud.indegree() > 1:
-                a = random.randint(0,1)
-                label = ""
-                if a == 0:
-                    label = "|"
-                else:
-                    label = "&"
-                b.get_node_by_id(id_noeud).set_label(label)
+                b.get_node_by_id(id_noeud).set_label(labelNoeudBinaire())
                 if noeud.outdegree() > 1:
                     id_copie = b.add_node()
                     b.add_edge(id_noeud, id_copie)
@@ -50,7 +49,7 @@ class bool_circ(open_digraph):
                 a = random.randint(0,1)
                 label = ""
                 if a == 0:
-                    label = " "
+                    label = ""
                 else:
                     label = "~"
                     if noeud.outdegree() > 1:
@@ -117,9 +116,42 @@ class bool_circ(open_digraph):
                 #Sinon c'est un noeud de copie, on peut directement le relier à la sortie
                 else:
                     b.add_edge(id_noeud, id_sortie)
-                    
+        if nbInput!=None:
+            if nbInput <1:
+                raise ValueError("Le nombre d'entrées doit être supérieur ou égal à 1")
+            # Si il y a plus d'inputs que ce qui est voulu alors on fusionne des entrées
+            while len(b.inputs_ids()) > nbInput:
+                id1, id2 = random.sample(b.inputs_ids(), 2)
+                b.merge_nodes(id1, id2)
+                if(len(b.get_node_by_id(id1).get_children().keys()) != 2):
+                    raise ValueError(f"Erreur defusion des noeuds d'entrée, le noeud fusionné n'a pas exactement 2 enfants ({len(b.get_node_by_id(id1).get_children().keys())})")
+                enfant1 = list(b.get_node_by_id(id1).get_children().keys())[0]
+                enfant2 = list(b.get_node_by_id(id1).get_children().keys())[1]
+                # On fusionne les noeuds de copie pour que l'entrée n'ait qu'un seul enfant
+                b.merge_nodes(enfant1, enfant2)
+                b.remove_edge(id1, enfant1) #La fusion double les arêtes, on en retire une
 
-
+            while len(b.inputs_ids()) < nbInput:
+                nv_id = b.add_node()
+                b.add_input_id(nv_id)
+                # On veut un noeud qui ne soit pas un noeud d'entrée, de sortie ou de copie 
+                id_noeud = random.choice([node for node in b.get_id_node_map().keys() if node not in b.inputs_ids() and node not in b.outputs_ids() and b.get_node_by_id(node).get_label() in ["&", "~", "|"]])
+                id_parent = list(b.get_node_by_id(id_noeud).get_parents().keys())[0]
+                b.remove_parallel_edges(id_parent, id_noeud)
+                noeud_binaire_id = b.add_node()
+                b.add_edge(id_parent, noeud_binaire_id)
+                b.add_edge(noeud_binaire_id, id_noeud)
+                b.add_edge(nv_id, noeud_binaire_id)
+                node_binaire = b.get_node_by_id(noeud_binaire_id)
+                label = ["|", "&"][random.randint(0,1)]
+                node_binaire.set_label(label)
+        # On retire les noeuds de copie inutiles
+        for id_noeud, noeud in b.copy().get_id_node_map().items():
+            if noeud.get_label() == "" and noeud.indegree() == 1 and noeud.outdegree() == 1:
+                id_parent = list(noeud.get_parents().keys())[0]
+                id_enfant = list(noeud.get_children().keys())[0]
+                b.add_edge(id_parent, id_enfant)
+                b.remove_node_by_id(id_noeud)
 
         return bool_circ(b)
 
