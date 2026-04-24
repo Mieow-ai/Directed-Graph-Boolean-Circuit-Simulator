@@ -425,8 +425,10 @@ class InitTest(unittest.TestCase):
         b = bool_circ.acyclicToBoolRandom(g,nbInput=4)
         #b.save_as_dot_file("test_acyclicToBoolRandomAfter.dot")
         print(len(b.outputs_ids()))
-        b.display()
-
+        #b.display()
+    def test_Adder(self):
+        #bool_circ.adder0().display()
+        bool_circ.adder(1).display()
 
     
         

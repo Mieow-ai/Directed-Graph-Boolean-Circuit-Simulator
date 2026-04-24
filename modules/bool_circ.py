@@ -445,4 +445,82 @@ class bool_circ(open_digraph):
             node_id1.set_label("") 
                
         return b,inputs_list
-        
+    
+    @classmethod      
+    def adder(cls,n):
+        if(n==0):
+            return bool_circ.adder0()
+        else:
+            adder1 = bool_circ.adder(n-1)
+            adder2 = bool_circ.adder(n-1)
+            b = adder1.compo_parallele(adder2)
+            # l'adder de taille n a 2 registre de taille 2^n et un retenue entrante
+            # on sépare chaque registre en bits de poids faible et bits de poids fort
+            # Chaque adder a 2^(n-1) bits de poids fort (0 à 2^(n-1) -1) 2^n-1 bits de poids faible et une retenue 
+            k = 2**(n-1)
+            #On récupére les inputs après la compo (pour avoir le shift_indices)
+            inputsAdder1 = b.inputs_ids()[0:2*k + 1]
+            inputsAdder2 = b.inputs_ids()[2*k+1:4*k+2]
+            inputs_id = inputsAdder1[0:k]
+            inputs_id += inputsAdder2[0:k]
+            inputs_id += inputsAdder1[k:2*k]
+            inputs_id += inputsAdder2[k:2*k]
+            retenueEntrante = inputsAdder1[2**(n)]
+            inputs_id.append(retenueEntrante)
+            b.set_inputs(inputs_id)
+            # Pour les sorties il suffit d'enlever la retenue sortante de l'adder 2
+            # l'adder 1 a une retenue sortante, 2^n-1 bits de sortie, puis il y a la retenue de l'adder 2
+            outputs = b.outputs_ids()
+            retenuesortante = outputs[2**(n-1)+1]
+            outputs.remove(retenuesortante)
+            b.set_outputs(outputs)
+            # On relie la retenue sortante de l'adder 2 à la retenue entrante de l'adder 1
+            b.add_edge(retenuesortante, retenueEntrante)
+            return b
+
+
+
+    @classmethod
+    def adder0(cls):
+        b = bool_circ(open_digraph.empty())
+        entree1 = b.add_node()
+        b.add_input_id(entree1)
+        entree2 = b.add_node()
+        b.add_input_id(entree2)
+        retenueEntrante = b.add_node()
+        b.add_input_id(retenueEntrante)
+        retenueSortante = b.add_node()
+        b.add_output_id(retenueSortante)
+        sortie1 = b.add_node()
+        b.add_output_id(sortie1)
+        copie1 = b.add_node()
+        b.add_edge(entree1, copie1)
+        copie2 = b.add_node()
+        b.add_edge(entree2, copie2)
+        copieRetenueEntrante = b.add_node()
+        b.add_edge(retenueEntrante, copieRetenueEntrante)
+        xor1 = b.add_node()
+        b.add_edge(copie1, xor1)
+        b.add_edge(copie2, xor1)
+        b.get_node_by_id(xor1).set_label("^")
+        copieXor1 = b.add_node()
+        b.add_edge(xor1, copieXor1)
+        and1 = b.add_node()
+        b.add_edge(copie1, and1)
+        b.add_edge(copie2, and1)
+        b.get_node_by_id(and1).set_label("&")
+        and2 = b.add_node()
+        b.add_edge(copieXor1, and2)
+        b.add_edge(copieRetenueEntrante, and2)
+        b.get_node_by_id(and2).set_label("&")        
+        xor2 = b.add_node()
+        b.add_edge(copieXor1, xor2)
+        b.add_edge(copieRetenueEntrante, xor2)
+        b.get_node_by_id(xor2).set_label("^")
+        or1 = b.add_node()
+        b.add_edge(and1, or1)
+        b.add_edge(and2, or1)
+        b.get_node_by_id(or1).set_label("|")
+        b.add_edge(or1, retenueSortante)
+        b.add_edge(xor2, sortie1)
+        return b
