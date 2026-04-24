@@ -540,3 +540,56 @@ class bool_circ(open_digraph):
             b.add_output_id(idS)
         return b
     
+    def simplifier_copie(self):
+        b = self.copy()
+        for id, noeud in b.get_id_node_map().items():
+            if noeud.get_label() == "" and noeud.indegree() == 1 and noeud.outdegree() > 0:
+                id_enfants = list(noeud.get_children().keys())
+                id_parent = list(noeud.get_parents().keys())[0]
+                parent = b.get_node_by_id(id_parent)
+                label = parent.get_label()
+                if(label == "0" or label == "1"):
+                    for id_enfant in id_enfants:
+                        idN = b.add_node(label=label)
+                        b.add_edge(idN, id_enfant)
+                    b.remove_node_by_id(id)
+                    b.remove_node_by_id(id_parent)
+        return b
+    
+    def simplifier_non(self):
+        b = self.copy()
+        for id, noeud in b.get_id_node_map().items():
+            if noeud.get_label() == "~":
+                id_parent = list(noeud.get_parents().keys())[0]
+                parent = b.get_node_by_id(id_parent)
+                label = parent.get_label()
+                if(label == "0"):
+                    parent.set_label("1")
+                    b.add_edge(parent.get_id(), list(noeud.get_children().keys())[0])
+                    b.remove_node_by_id(id)
+                elif(label == "1"):
+                    parent.set_label("0")
+                    b.add_edge(parent.get_id(), list(noeud.get_children().keys())[0])
+                    b.remove_node_by_id(id)
+        return b
+                
+    def simplifier_et(self):
+        b = self.copy()
+        for id, noeud in b.get_id_node_map().items():
+            if noeud.get_label() == "&":
+                parents = list(noeud.get_parents().keys())
+                if any(b.get_node_by_id(parent).get_label() == "0" for parent in parents):
+                    idN = b.add_node(label="0")
+                    b.add_edge(idN, list(noeud.get_children().keys())[0])
+                    b.remove_node_by_id(id)
+                else:
+                    for parent in parents:
+                        p = b.get_node_by_id(parent)
+                        if p.get_label() == "1":
+                            b.remove_node_by_id(parent)
+        return b
+                            
+
+                
+                
+    

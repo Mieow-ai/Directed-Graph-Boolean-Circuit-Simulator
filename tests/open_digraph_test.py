@@ -433,10 +433,27 @@ class InitTest(unittest.TestCase):
     
     def test_Registre(self):
         b = bool_circ.registre(11)
-        b.display()
+        #b.display()
+        
+    def test_simplifie_copie(self):
+        b = bool_circ.registre(11)
+        g = open_digraph.empty()
+        for i in range(10):
+            g.add_node()
+        edges = [(0, 3), (1, 4), (1, 5), (1, 8),(2, 4),(3, 5), 
+        (3, 6), (3, 7),(4, 6),(5, 7),(6, 8), (6, 9)]
+        g.add_edges(edges)
+        b2 = bool_circ.acyclicToBoolRandom(g,nbInput=8)
+        
+        b3 = b.compo_sequentielle(b2)
+        b3.simplifier_copie()
+        b3.simplifier_non()
+        b3.simplifier_et()
+        b3.simplifier_copie()
+        b3.display()
+        
 
 
-    
         
 
 
