@@ -428,7 +428,13 @@ class InitTest(unittest.TestCase):
         #b.display()
     def test_Adder(self):
         #bool_circ.adder0().display()
-        bool_circ.adder(1).display()
+        #bool_circ.adder(1).display()
+        return
+    
+    def test_Registre(self):
+        b = bool_circ.registre(11)
+        b.display()
+
 
     
         

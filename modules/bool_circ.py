@@ -478,8 +478,6 @@ class bool_circ(open_digraph):
             b.add_edge(retenuesortante, retenueEntrante)
             return b
 
-
-
     @classmethod
     def adder0(cls):
         b = bool_circ(open_digraph.empty())
@@ -524,3 +522,21 @@ class bool_circ(open_digraph):
         b.add_edge(or1, retenueSortante)
         b.add_edge(xor2, sortie1)
         return b
+    
+    @classmethod
+    def registre(self,entier, n=8):
+        if(entier >= 2**n):
+            raise ValueError("Entier trop grand")
+        binaire = bin(entier)[2:]
+        zeros = ""
+        if(len(binaire)<n):
+            zeros = "0" * (n-len(binaire))
+        binaire = zeros+binaire
+        b = bool_circ(open_digraph.empty())
+        for i in binaire:
+            idN = b.add_node(label=i)
+            idS = b.add_node()
+            b.add_edge(idN,idS)
+            b.add_output_id(idS)
+        return b
+    
