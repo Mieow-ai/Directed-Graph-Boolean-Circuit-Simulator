@@ -451,6 +451,10 @@ class InitTest(unittest.TestCase):
         b3.simplifier_et()
         b3.simplifier_copie()
         b3.display()
+    
+    def test_Somme(self):
+        somme = bool_circ.somme(37,120)
+        self.assertEqual(somme, 157)
         
 
 

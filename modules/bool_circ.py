@@ -465,17 +465,18 @@ class bool_circ(open_digraph):
             inputs_id += inputsAdder2[0:k]
             inputs_id += inputsAdder1[k:2*k]
             inputs_id += inputsAdder2[k:2*k]
-            retenueEntrante = inputsAdder1[2**(n)]
-            inputs_id.append(retenueEntrante)
+            retenueEntranteAdder2 = inputsAdder2[2**(n)]
+            inputs_id.append(retenueEntranteAdder2)
             b.set_inputs(inputs_id)
             # Pour les sorties il suffit d'enlever la retenue sortante de l'adder 2
             # l'adder 1 a une retenue sortante, 2^n-1 bits de sortie, puis il y a la retenue de l'adder 2
             outputs = b.outputs_ids()
-            retenuesortante = outputs[2**(n-1)+1]
-            outputs.remove(retenuesortante)
+            retenuesortanteAdder2 = outputs[2**(n-1)+1]
+            outputs.remove(retenuesortanteAdder2)
             b.set_outputs(outputs)
             # On relie la retenue sortante de l'adder 2 à la retenue entrante de l'adder 1
-            b.add_edge(retenuesortante, retenueEntrante)
+            retenueEntranteAdder1 = inputsAdder1[2**(n)]
+            b.add_edge(retenuesortanteAdder2, retenueEntranteAdder1)
             return b
 
     @classmethod
@@ -524,7 +525,7 @@ class bool_circ(open_digraph):
         return b
     
     @classmethod
-    def registre(self,entier, n=8):
+    def registre(cls,entier, n=8):
         if(entier >= 2**n):
             raise ValueError("Entier trop grand")
         binaire = bin(entier)[2:]
@@ -589,7 +590,93 @@ class bool_circ(open_digraph):
                             b.remove_node_by_id(parent)
         return b
                             
-
-                
-                
-    
+    @classmethod
+    def somme(cls, entier1, entier2):
+        registre1 = bool_circ.registre(entier1)
+        registre2 = bool_circ.registre(entier2)
+        registres= registre1.compo_parallele(registre2)
+        #On ajoute une retenue vide
+        retenue = registres.add_node()
+        registres.get_node_by_id(retenue).set_label("0")
+        retenueSortie = registres.add_node()
+        registres.add_output_id(retenueSortie)
+        registres.add_edge(retenue, retenueSortie)
+        adder3 = bool_circ.adder(3)
+        print(len(registres.outputs_ids()))
+        print(len(adder3.inputs_ids()))
+        circuit = registres.compo_sequentielle(adder3)
+        tri_topo = circuit.tri_topologique()
+        for niveau in tri_topo:
+            for id in niveau:
+                node = circuit.get_node_by_id(id)
+                if node.get_label() == "0" or node.get_label() == "1":
+                    continue
+                elif node.get_label() == "" or node.get_label()==None: #Noeud de copie ou de sortie
+                    if len(node.get_parents()) != 1:
+                       raise ValueError("Un noeud de copie ou de sortie doit avoir exactement un parent")
+                    id_parent= list(node.get_parents().keys())[0] # un seul parent
+                    parent = circuit.get_node_by_id(id_parent)
+                    node.set_label(parent.get_label())
+                elif node.get_label() == "~":
+                    if len(node.get_parents()) != 1:
+                       raise ValueError("Un noeud unaire doit avoir exactement un parent")
+                    id_parent= list(node.get_parents().keys())[0] # un seul parent
+                    parent = circuit.get_node_by_id(id_parent)
+                    if parent.get_label() == "0":
+                        node.set_label("1")
+                    elif parent.get_label() == "1":
+                        node.set_label("0")
+                    else:
+                        raise ValueError("Lors de l'évaluation du noeud, son parent doit avoir une valeur binaire")
+                elif node.get_label() == "&":
+                    if len(node.get_parents()) != 2:
+                       raise ValueError("Un noeud binaire doit avoir exactement deux parents")
+                    id_parent1= list(node.get_parents().keys())[0]
+                    id_parent2= list(node.get_parents().keys())[1]
+                    parent1 = circuit.get_node_by_id(id_parent1)
+                    parent2 = circuit.get_node_by_id(id_parent2)
+                    if parent1.get_label() not in ["0", "1"] or parent2.get_label() not in ["0", "1"]:
+                        raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                    if parent1.get_label() == "0" or parent2.get_label() == "0":
+                        node.set_label("0")
+                    #Sinon les deux sont à 1
+                    else:
+                        node.set_label("1")
+                elif node.get_label() == "|":
+                    if len(node.get_parents()) != 2:
+                       raise ValueError("Un noeud binaire doit avoir exactement deux parents")
+                    id_parent1= list(node.get_parents().keys())[0]
+                    id_parent2= list(node.get_parents().keys())[1]
+                    parent1 = circuit.get_node_by_id(id_parent1)
+                    parent2 = circuit.get_node_by_id(id_parent2)
+                    if parent1.get_label() not in ["0", "1"] or parent2.get_label() not in ["0", "1"]:
+                        raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                    if parent1.get_label() == "1" or parent2.get_label() == "1":
+                        node.set_label("1")
+                    #Sinon les deux sont à 0
+                    else:
+                        node.set_label("0")
+                elif node.get_label() == "^": #XOR
+                    if len(node.get_parents()) != 2:
+                       raise ValueError("Un noeud binaire doit avoir exactement deux parents")
+                    id_parent1= list(node.get_parents().keys())[0]
+                    id_parent2= list(node.get_parents().keys())[1]
+                    parent1 = circuit.get_node_by_id(id_parent1)
+                    parent2 = circuit.get_node_by_id(id_parent2)
+                    if parent1.get_label() not in ["0", "1"] or parent2.get_label() not in ["0", "1"]:
+                        raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                    if (parent1.get_label() == "0" and parent2.get_label() == "0") or (parent1.get_label() == "1" and parent2.get_label() == "1"):
+                        node.set_label("0")
+                    #Sinon une des deux est à 1 et l'autre à 0
+                    else:
+                        node.set_label("1")
+                else:
+                    raise ValueError("Label de noeud invalide lors de l'évaluation du circuit")
+        string_sortie = ""
+        for id in circuit.outputs_ids():
+            node = circuit.get_node_by_id(id)
+            if node.get_label() not in ["0", "1"]:
+                raise ValueError("Lles noeuds de sortie doivent avoir des valeurs binaires")
+            string_sortie += node.get_label()
+        
+        return int(string_sortie, 2)
