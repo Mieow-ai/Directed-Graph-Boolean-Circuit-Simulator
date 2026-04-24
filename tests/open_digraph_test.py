@@ -444,19 +444,21 @@ class InitTest(unittest.TestCase):
         (3, 6), (3, 7),(4, 6),(5, 7),(6, 8), (6, 9)]
         g.add_edges(edges)
         b2 = bool_circ.acyclicToBoolRandom(g,nbInput=8)
-        
         b3 = b.compo_sequentielle(b2)
-        b3.simplifier_copie()
-        b3.simplifier_non()
-        b3.simplifier_et()
-        b3.simplifier_copie()
-        b3.display()
+        #b3.display()
+        b4 = b3.simplifier_copie()
+        #b4.display()
+        b5 = b4.simplifier_non()
+        #b5.display()
+        b6 = b5.simplifier_et()
+        b6.display()
     
+    """
     def test_Somme(self):
         somme = bool_circ.somme(37,120)
         self.assertEqual(somme, 157)
         
-
+    """
 
         
 
