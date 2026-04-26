@@ -445,14 +445,11 @@ class InitTest(unittest.TestCase):
         g.add_edges(edges)
         b2 = bool_circ.acyclicToBoolRandom(g,nbInput=8)
         b3 = b.compo_sequentielle(b2)
-        #b3.display()
-        b4 = b3.simplifier_copie()
-        #b4.display()
-        b5 = b4.simplifier_non()
-        #b5.display()
-        b6 = b5.simplifier_et()
-        b6.display()
-    
+        b3.save_as_dot_file("test_simplifie_naif_before.dot")
+        b3.simplifier_naif()
+        b3.save_as_dot_file("test_simplifie_naif_after.dot")
+  
+
     """
     def test_Somme(self):
         somme = bool_circ.somme(37,120)

@@ -306,6 +306,8 @@ class bool_circ(open_digraph):
             if id_noeud in tri[i]:
                 return i+1
         raise ValueError("l'id n'est pas dans le graphe")
+    
+
     def profondeur(self):
         tri = self.tri_topologique()
         return len(tri)
@@ -541,61 +543,138 @@ class bool_circ(open_digraph):
         return b
     
     def simplifier_copie(self):
-        b = bool_circ(self.copy())
-        for id, noeud in list(b.get_id_node_map().items()):
-            if id not in b.get_id_node_map(): continue
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
             if noeud.get_label() == "" and noeud.indegree() == 1 and noeud.outdegree() > 0:
                 id_enfants = list(noeud.get_children().keys())
                 id_parent = list(noeud.get_parents().keys())[0]
-                parent = b.get_node_by_id(id_parent)
+                parent = self.get_node_by_id(id_parent)
                 label = parent.get_label()
                 if(label == "0" or label == "1"):
                     for id_enfant in id_enfants:
-                        idN = b.add_node(label=label)
-                        b.add_edge(idN, id_enfant)
-                    b.remove_node_by_id(id)
-                    if parent.outdegree() == 0:
-                        b.remove_node_by_id(id_parent)
-        return b
+                        idN = self.add_node(label=label)
+                        self.add_edge(idN, id_enfant)
+                        self.remove_edge(id, id_enfant)
+                    if(noeud in self.outputs_ids()):
+                        noeud.set_label(label)
+                    else: 
+                        self.remove_node_by_id(id)
+                    res = True
+        return res
     
     def simplifier_non(self):
-        b = bool_circ(self.copy())
-        for id, noeud in list(b.get_id_node_map().items()):
-            if id not in b.get_id_node_map(): continue
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
             if noeud.get_label() == "~":
-                id_parent = list(noeud.get_parents().keys())[0]
-                parent = b.get_node_by_id(id_parent)
-                label = parent.get_label()
-                if(label == "0" or label == "1"):
-                    nouveau_label = "1" if label == "0" else "0"
-                    id_enfants = list(noeud.get_children().keys())
-                    for id_enfant in id_enfants:
-                        idN = b.add_node(label=nouveau_label)
-                        b.add_edge(idN, id_enfant)
-                    b.remove_node_by_id(id)
-                    if parent.outdegree() == 0:
-                        b.remove_node_by_id(id_parent)
-        return b
+                parents = list(noeud.get_parents().keys())
+                for id_parent in parents:
+                    parent = self.get_node_by_id(id_parent)
+                    label = parent.get_label()
+                    if(label == "0" or label == "1"):
+                        nouveau_label = "1" if label == "0" else "0"
+                        enfants = list(noeud.get_children().keys())
+                        for id_enfant in enfants:
+                            idN = self.add_node(label=nouveau_label)
+                            self.add_edge(idN, id_enfant)
+                        if(noeud in self.outputs_ids()):
+                            noeud.set_label(nouveau_label)     
+                        else:
+                            self.remove_node_by_id(id)                  
+                        res = True
+        return res
                 
     def simplifier_et(self):
-        b = bool_circ(self.copy())
-        for id, noeud in list(b.get_id_node_map().items()):
-            if id not in b.get_id_node_map(): continue
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
             if noeud.get_label() == "&":
                 parents = list(noeud.get_parents().keys())
-                if any(b.get_node_by_id(parent).get_label() == "0" for parent in parents):
+                if any(self.get_node_by_id(parent).get_label() == "0" for parent in parents):
                     for id_enfant in list(noeud.get_children().keys()):
-                        idN = b.add_node(label="0")
-                        b.add_edge(idN, id_enfant)
-                    b.remove_node_by_id(id)
-                    for parent in parents:
-                        if b.get_node_by_id(parent).outdegree() == 0:
-                            b.remove_node_by_id(parent)
+                        idN = self.add_node(label="0")
+                        self.add_edge(idN, id_enfant)
+                    if(noeud in self.outputs_ids()):
+                        noeud.set_label(0)
+                    else :
+                        self.remove_node_by_id(id)
+                    res = True
                 else:
-                    parents_1 = [p for p in parents if b.get_node_by_id(p).get_label() == "1"]
+                    parents_1 = [p for p in parents if self.get_node_by_id(p).get_label() == "1"]
                     for p in parents_1:
-                        b.remove_edge(p, id)
-                    for parent in parents_1:
-                        if parent in b.get_id_node_map() and b.get_node_by_id(parent).outdegree() == 0:
-                            b.remove_node_by_id(parent)
-        return b
+                        self.remove_edge(p, id)
+                        res = True
+        return res
+
+    def simplifier_ou(self):
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
+            if noeud.get_label() == "|":
+                parents = list(noeud.get_parents().keys())
+                if any(self.get_node_by_id(parent).get_label() == "1" for parent in parents):
+                    for id_enfant in list(noeud.get_children().keys()):
+                        idN = self.add_node(label="1")
+                        self.add_edge(idN, id_enfant)
+                    if(noeud in self.outputs_ids()):
+                        noeud.set_label(1)
+                    self.remove_node_by_id(id)
+                    res = True
+                else:
+                    parents_0 = [p for p in parents if self.get_node_by_id(p).get_label() == "0"]
+                    for p in parents_0:
+                        self.remove_edge(p, id)
+                        res = True
+            
+        return res
+    
+    def simplifier_ou_exclusif(self):
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
+            if noeud.get_label() == "^":
+                parents = list(noeud.get_parents().keys())
+                for id_parent in parents:
+                    parent = self.get_node_by_id(id_parent)
+                    if(parent.get_label() == "0"):
+                        self.remove_edge(id_parent, id)
+                        res = True
+                    elif(parent.get_label() == "1"):
+                        self.remove_edge(id_parent, id)
+                        idN = self.add_node(label="~")
+                        for id_enfant in list(noeud.get_children().keys()):
+                            self.add_edge(idN, id_enfant)
+                            self.remove_edge(id, id_enfant)
+                        self.add_edge(id, idN)
+                        res = True
+        return res
+    
+    def simplifier_neutre(self):
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
+            if noeud.get_label() == "&" and noeud.indegree() == 0 :
+                noeud.set_label("1")
+                res = True
+            elif ((noeud.get_label() == "|" or noeud.get_label() == "^") and noeud.indegree() == 0) :
+                noeud.set_label("0")
+                res = True
+        return res
+    
+    
+    def nettoyer_noeuds_morts(self):
+        flag = True
+        while flag:
+            flag = False
+            for id, noeud in list(self.get_id_node_map().items()):
+                # Si le nœud n'a pas d'enfant ET n'est pas une sortie officielle
+                if noeud.outdegree() == 0 and id not in self.outputs_ids():
+                    self.remove_node_by_id(id)
+                    flag = True # On relance car sa suppression a peut-être créé un nouveau nœud mort au-dessus
+
+    def simplifier_naif(self):
+        flag = True;
+        while flag:
+            flag = self.simplifier_copie() or self.simplifier_non() or self.simplifier_et() or self.simplifier_ou() or self.simplifier_ou_exclusif() or self.simplifier_neutre()
+        self.nettoyer_noeuds_morts()
