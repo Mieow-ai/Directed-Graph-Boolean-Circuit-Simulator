@@ -9,7 +9,19 @@ class bool_circ(open_digraph):
         super().__init__(g.inputs.copy(), g.outputs.copy(), g.nodes.values())
         if not self.is_well_formed():
             raise ValueError("Le graphe fourni n'est pas un circuit booléen valide (acyclique avec contraintes de degré respectées)")
+    def compo_parallele(self, other):
+        return bool_circ(super().compo_parallele(other))
+    def compo_sequentielle(self, other):
+        return bool_circ(super().compo_sequentielle(other))
+    
+    @classmethod
+    def empty(cls):
+        """
+        Renvoie un circuit booléen vide.
         
+        :param cls
+        """
+        return bool_circ(open_digraph.empty())
     @classmethod      
     def acyclicToBoolRandom(cls, g, nbInput=None,nbOutput=None):
         if g.is_cyclic():
@@ -173,39 +185,9 @@ class bool_circ(open_digraph):
                     return False
         return True
 
-    def compo_parallele(self, other):
-        f = self.copy()
-        shift = (f.max_id() + 1) if f.max_id() is not None else 0
-        g = other.shift_indices(shift)
-        inputs = f.inputs_ids() + g.inputs_ids()
-        outputs = f.outputs_ids() + g.outputs_ids()
-        nodes = f.get_nodes() + g.get_nodes()
-        return bool_circ(open_digraph(inputs, outputs, nodes))
+   
     
-    def compo_sequentielle(self, other):
-        if (len(self.outputs_ids()) != len(other.inputs_ids())):
-            raise ValueError("Graphes incompatibles (le nombre de sorties de f doit être égal au nombre d'entrées de g)")
-        f = self.copy()
-        shift = (f.max_id() + 1) if f.max_id() is not None else 0
-        g = other.shift_indices(shift)
-        inputs = f.inputs_ids()
-        outputs = g.outputs_ids()
-        foutputs = f.outputs_ids()
-        ginputs = g.inputs_ids()
-        nodes_list = f.get_nodes() + g.get_nodes()
-        combined = open_digraph(inputs, outputs, nodes_list)
-        for i in range(len(foutputs)):
-            fid = foutputs[i]
-            gid = ginputs[i]
-            noeudsortie = f.get_node_by_id(fid)
-            noeudentree = g.get_node_by_id(gid)
-            parents = list(noeudsortie.get_parents().keys())
-            children = list(noeudentree.get_children().keys())
-            combined.remove_node_by_id(fid)
-            combined.remove_node_by_id(gid)
-            if parents and children:
-                combined.add_edge(parents[0], children[0])
-        return bool_circ(combined)
+    
     
     def longueurs_dfs(self, src, direction = 1) :
         prev = {}
@@ -282,75 +264,11 @@ class bool_circ(open_digraph):
                 resultat[id] = (dist1[id], dist2[id])
         return resultat
 
-    # Tri topologique "compréssé vers le haut"                            
-    # On réutilise une partie du code de is_cyclic
-    def tri_topologique(self):
-        g_copy = self.copy()
-        res = []
-        while len(g_copy.get_nodes()) > 0:
-            cofeuilles = set()
-            for id_noeud, noeud in g_copy.get_id_node_map().items():
-                if noeud.indegree() == 0:
-                    cofeuilles.add(id_noeud)
-            if not cofeuilles:
-                raise ValueError("Le graphe est cyclique, tri topologique impossible")
-            # On retire les feuilles après avoir trouver tout le niveau courant
-            res.append(cofeuilles)
-            for id in cofeuilles:
-                g_copy.remove_node_by_id(id)
-        return res
     
-    def profondeur_noeud(self, id_noeud):
-        tri = self.tri_topologique()
-        for i in range(len(tri)):
-            if id_noeud in tri[i]:
-                return i+1
-        raise ValueError("l'id n'est pas dans le graphe")
-    
-
-    def profondeur(self):
-        tri = self.tri_topologique()
-        return len(tri)
-    
-    def longest_path(self,u,v):
-        tri_topo = self.tri_topologique()
-        prof_u = self.profondeur_noeud(u)
-        prof_v = self.profondeur_noeud(v)
-        if(prof_u >= prof_v):
-            return None
-        else:
-            dist = {u : 0}
-            prev = {}
-            for profondeur in range(prof_u, prof_v):
-                for id in tri_topo[profondeur]: 
-                    parents = self.get_node_by_id(id).get_parents()
-                    for id_parent in parents:
-                        if id_parent in dist.keys():
-                            if(id in dist.keys()):
-                                if(dist[id_parent]+1>dist[id]):
-                                    dist[id] = dist[id_parent]+1
-                                    prev[id] = id_parent
-                            else:
-                                dist[id] = dist[id_parent]+1
-                                prev[id] = id_parent   
-                    if id == v:
-                        path = []
-                        distance = dist[v] if v in dist else None 
-                        if distance is not None:
-                            current = v
-                            while current != u:
-                                path.append(current)
-                                current = prev[current]
-                            path.append(u)
-                            path.reverse()
-                            return distance, path
-        return None
       
     @classmethod      
     def formula_to_tree(cls, s):
-        g = open_digraph.empty()
-        b = bool_circ(g)
-
+        b = cls.empty()
         current_node_id = b.add_node()
         current_node = b.get_node_by_id(current_node_id)
         sortie_id = b.add_node()
@@ -399,8 +317,7 @@ class bool_circ(open_digraph):
     
     @classmethod      
     def formula_to_treeExtend(cls, *args):
-        g = open_digraph.empty()
-        b = bool_circ(g)
+        b = cls.empty()
 
         for s in args:
             current_node_id = b.add_node()
@@ -482,7 +399,7 @@ class bool_circ(open_digraph):
 
     @classmethod
     def adder0(cls):
-        b = bool_circ(open_digraph.empty())
+        b = cls.empty()
         entree1 = b.add_node()
         b.add_input_id(entree1)
         entree2 = b.add_node()
@@ -526,7 +443,7 @@ class bool_circ(open_digraph):
         return b
     
     @classmethod
-    def registre(self,entier, n=8):
+    def registre(cls, entier, n=8):
         if(entier >= 2**n):
             raise ValueError("Entier trop grand")
         binaire = bin(entier)[2:]
@@ -534,7 +451,7 @@ class bool_circ(open_digraph):
         if(len(binaire)<n):
             zeros = "0" * (n-len(binaire))
         binaire = zeros+binaire
-        b = bool_circ(open_digraph.empty())
+        b = cls.empty()
         for i in binaire:
             idN = b.add_node(label=i)
             idS = b.add_node()
