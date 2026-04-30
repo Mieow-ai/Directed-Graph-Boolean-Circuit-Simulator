@@ -294,6 +294,71 @@ class CompositionMixin:
 
 # MARK: - Algo
 class AlgoMixin:
+    def longueurs_dfs(self, src, direction = 1) :
+        prev = {}
+        dist = {}
+        if direction == 1:
+            self.longueurs_aux(src, prev,dist, 0, None)
+            return prev,dist
+        elif direction == -1:
+            self.longueurs_aux2(src, prev,dist, 0, None)
+            return prev,dist
+        else:
+            prev1, dist1 = self.longueurs_dfs(src, direction = 1)
+            prev2, dist2 = self.longueurs_dfs(src, direction = -1)
+            return prev1 | prev2,  dist1 | dist2
+        
+                
+    def longueurs_aux(self, src, prev,dist, current_dist, parent):
+            childs = self.get_node_by_id(src).get_children()
+            if src not in dist or dist[src] > current_dist:
+                dist[src] = current_dist
+                prev[src] = parent
+                for child in childs.keys():
+                    self.longueurs_aux(child, prev, dist, current_dist + 1, src)
+                
+    def longueurs_aux2(self, src, prev,dist, current_dist, enfant):
+            parents = self.get_node_by_id(src).get_parents()
+            if src not in dist or dist[src] > current_dist:
+                dist[src] = current_dist
+                prev[src] = enfant
+                for parent in parents.keys():
+                    self.longueurs_aux2(parent, prev, dist, current_dist + 1, src)         
+
+    def longueurs_bfs(self, src, direction=1, tgt = None):
+        dist = {src: 0}
+        prev = {}
+        queue = [src]
+        while queue:
+            current = queue.pop(0)
+            noeud = self.get_node_by_id(current)
+            voisins = []
+            if direction == 1 or direction is None:
+                voisins.extend(list(noeud.get_children().keys()))
+            if direction == -1 or direction is None:
+                voisins.extend(list(noeud.get_parents().keys()))
+            for voisin in voisins:
+                if voisin not in dist:
+                    dist[voisin] = dist[current] + 1
+                    prev[voisin] = current
+                    if voisin == tgt:
+                        return dist, prev
+                    queue.append(voisin)
+        return dist, prev
+    
+    def shortest_path(self, src, tgt, direction = 1):
+        dist, prev = self.longueurs_bfs(src, direction, tgt)
+        distance = dist[tgt] if tgt in dist else None
+        path = []
+        if distance is not None:
+            current = tgt
+            while current != src:
+                path.append(current)
+                current = prev[current]
+            path.append(src)
+            path.reverse()
+        return distance, path
+    
 	# Tri topologique "compréssé vers le haut"                            
     # On réutilise une partie du code de is_cyclic
     def tri_topologique(self):
@@ -319,13 +384,12 @@ class AlgoMixin:
                 return i+1
         raise ValueError("l'id n'est pas dans le graphe")
     
-
     def profondeur(self):
         tri = self.tri_topologique()
         return len(tri)
     
     def longest_path(self,u,v):
-        tri_topo = self.tri_topologique()
+        tri_topo = self.tri_topologique() # Vérifie en même temps que le graphe est acyclique
         prof_u = self.profondeur_noeud(u)
         prof_v = self.profondeur_noeud(v)
         if(prof_u >= prof_v):
