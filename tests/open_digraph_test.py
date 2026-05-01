@@ -426,6 +426,17 @@ class InitTest(unittest.TestCase):
         #b.save_as_dot_file("test_acyclicToBoolRandomAfter.dot")
         print(len(b.outputs_ids()))
         #b.display()
+
+    def test_acyclicToBoolRandom_vide(self):
+        g = open_digraph.empty()
+        b = bool_circ.acyclicToBoolRandom(g, nbInput=2, nbOutput=3)
+        self.assertEqual(len(b.inputs_ids()), 2)
+        self.assertEqual(len(b.outputs_ids()), 3)
+        b = bool_circ.acyclicToBoolRandom(g)
+        self.assertEqual(len(b.inputs_ids()), 0)
+        self.assertEqual(b, bool_circ.empty())
+
+
     def test_Adder(self):
         #bool_circ.adder0().display()
         #bool_circ.adder(1).display()

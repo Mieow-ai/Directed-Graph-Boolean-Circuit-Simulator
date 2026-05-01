@@ -165,19 +165,25 @@ class DisplayMixin:
         return g   
     
     def display(self, verbose=False):
-            import webbrowser
-            self.save_as_dot_file("temp.dot")
-            commande = "dot -Tpdf temp.dot -o temp.pdf"
-            if verbose:
-                print("--- Mode Verbose ---")
-                print("Fichier .dot généré : temp.dot")
-                print(f"Exécution de la commande : {commande}")
-            os.system(commande)
-            chemin_pdf = "file://" + os.path.abspath("temp.pdf")
-            if verbose:
-                print(f"Ouverture du fichier : {chemin_pdf}")
-                print("--------------------")
-            webbrowser.open(chemin_pdf)
+        import webbrowser
+        self.save_as_dot_file("temp.dot",verbose)
+        commande = "dot -Tpdf temp.dot -o temp.pdf"
+        print("Fichier .dot généré : temp.dot")
+        print(f"Exécution de la commande : {commande}")
+        os.system(commande)
+        chemin_pdf = "file://" + os.path.abspath("temp.pdf")
+        print(f"Ouverture du fichier : {chemin_pdf}")
+        print("--------------------")
+        webbrowser.open(chemin_pdf)
+
+    def save_as_pdf(self, path, verbose=False):
+        self.save_as_dot_file("temp.dot", verbose)
+        commande = f"dot -Tpdf temp.dot -o {path}"
+        print("Fichier .dot généré : temp.dot")
+        print(f"Exécution de la commande : {commande}")
+        print("--------------------")
+        os.system(commande)
+        os.remove("temp.dot")
 
 # MARK: - Composition
 class CompositionMixin:
@@ -355,6 +361,16 @@ class AlgoMixin:
             path.reverse()
         return distance, path
     
+    def ancetres_communs_dist(self, id1, id2):
+        dist1, _ = self.longueurs_bfs(id1, direction=-1)
+        dist2, _ = self.longueurs_bfs(id2, direction=-1)
+        resultat = {}
+        for id in dist1.keys():
+            if id in dist2:
+                # ancêtre commun
+                resultat[id] = (dist1[id], dist2[id])
+        return resultat
+
 	# Tri topologique "compréssé vers le haut"                            
     # On réutilise une partie du code de is_cyclic
     def tri_topologique(self):

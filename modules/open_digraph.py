@@ -186,6 +186,8 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
         self.outputs.append(output_id)
     def remove_output_id(self,output_id):
         self.outputs.remove(output_id)
+    def remove_input_id(self,input_id):
+        self.inputs.remove(input_id)
     
     # Méthodes ajouts
     def new_id(self):

@@ -13,123 +13,153 @@ class bool_circ(open_digraph):
             super().__init__(inputs, outputs, nodes)
             
         if not self.is_well_formed():
+            self.save_as_pdf("graphe_non_valide.pdf", verbose=True)
+            print(g.inputs_ids())
             raise ValueError("Le graphe fourni n'est pas un circuit booléen valide (acyclique avec contraintes de degré respectées)")
-
+    
+    def is_well_formed(self):
+        if self.is_cyclic():
+            print("Le graphe est cyclique")
+            return False
+        node_map = self.get_id_node_map()
+        for id_noeud, noeud in node_map.items():
+            for id_parent, multiplicite in noeud.get_parents().items():
+                if id_parent not in node_map:
+                    print(f"Le noeud {id_parent} n'existe pas dans le graphe")
+                    return False
+                if node_map[id_parent].outdegree() < multiplicite:
+                    print(f"Le noeud {id_parent} a un degré sortant insuffisant")
+                    return False
+            for id_enfant, multiplicite in noeud.get_children().items():
+                if id_enfant not in node_map:
+                    print(f"Le noeud {id_enfant} n'existe pas dans le graphe")
+                    return False
+                if node_map[id_enfant].indegree() < multiplicite:
+                    print(f"Le noeud {id_enfant} a un degré entrant insuffisant")
+                    return False
+        return True
+    
     @classmethod      
     def acyclicToBoolRandom(cls, g, nbInput=None,nbOutput=None):
         if g.is_cyclic():
             raise ValueError("Le graphe n'est pas acyclique, impossible")
         else:
             b = g.copy()
+        if g.get_node_ids() == [] and (nbInput is not None or nbOutput is not None):
+            b = cls.identity(1)
         def labelNoeudBinaire():
             return ["|", "&"][random.randint(0,1)]
-        def labelNoeudUnaire():
-            return ["~",""][random.randint(0,0)]
-        
-        for id_noeud, noeud in b.copy().get_id_node_map().items():
+
+        def ajout_copie_outdegree(id_noeud,noeud):
+            id_copie = b.add_node()
+            for id_enfant in list(noeud.get_children().keys()):
+                b.add_edge(id_copie, id_enfant)
+                b.remove_parallel_edges(id_noeud, id_enfant) # On retire entièrement les arêtes
+            b.add_edge(id_noeud, id_copie)
+
+        def ajout_sortie(id_noeud):
+            id_sortie = b.add_node()
+            b.add_output_id(id_sortie)
+            if id_noeud in b.outputs_ids():
+                b.remove_output_id(id_noeud)
+            b.add_edge(id_noeud, id_sortie)
+
+        def ajouts_operateur(noeud,id_noeud):
+            # Un operateur a une seule sortie, sinon il faut ajouter un noeud de copie après lui
+            if noeud.outdegree() > 1:
+                    ajout_copie_outdegree(id_noeud,noeud)
+            # Si il n'a pas d'enfant c'est aussi une sortie 
+            elif noeud.outdegree() == 0:           
+                    ajout_sortie(id_noeud)
+
+        for id_noeud, noeud in b.copy().get_id_node_map().items(): # On utilise une copie car le graphe est modifié pendant l'itération
         # Si un noeud n'a pas de noeuds parents, c'est une entrée du circuit
-        # Auparavant un noeud de copie était créé seulement si le noeud d'entrée avait plus d'un enfant, nous avons finalement choisi de créer un noeud de copie
-        # à chaque fois, ce qui simplifie la fusion dans le cas où le nbInput est spécifié
+        # Auparavant pour les noeuds d'entrées, un noeud de copie était créé seulement si le noeud d'entrée avait plus d'un enfant
+        # Nous avons finalement choisi de créer un noeud de copie à chaque fois, ce qui simplifie la fusion dans le cas où le nbInput est spécifié
         # Nous supprimons les noeuds de copies inutiles à la fin de la fonction
             if noeud.indegree() == 0 and noeud.outdegree() > 0:
                 id_entree = b.add_node()
-                b.add_input_id(id_entree)
-                b.add_edge(id_entree, id_noeud)
-        # Plusieurs parents -> opérateur logique
+                b.add_input_id(id_entree) 
+                if id_noeud in b.inputs_ids():
+                    b.remove_input_id(id_noeud)
+                b.add_edge(id_entree, id_noeud) # le noeud devient un noeud de copie et un noeud d'entrée est créé
+        
+            # Plusieurs parents -> opérateur logique
             elif noeud.indegree() > 1:
                 b.get_node_by_id(id_noeud).set_label(labelNoeudBinaire())
-                if noeud.outdegree() > 1:
-                    id_copie = b.add_node()
-                    b.add_edge(id_noeud, id_copie)
-                    for id_enfant in noeud.get_children().keys():
-                        b.add_edge(id_copie, id_enfant)
-                        b.remove_parallel_edges(id_noeud, id_enfant) # On retire entièrement les arêtes
-                # Si pas d'enfant c'est aussi une sortie 
-                elif noeud.outdegree() == 0:           
-                    id_sortie = b.add_node()
-                    b.add_output_id(id_sortie)
-                    b.add_edge(id_noeud, id_sortie)
-            # 1 parent -> c'est soit un noeud de copie soit une sortie
+                ajouts_operateur(noeud,id_noeud)
+           
+            # 1 parent -> c'est soit un noeud de copie soit une négation
             elif noeud.indegree() == 1:
                 a = random.randint(0,1)
                 label = ""
-                if a == 0:
-                    label = ""
-                else:
+                if a == 1:
                     label = "~"
-                    if noeud.outdegree() > 1:
-                        id_copie = b.add_node()
-                        b.add_edge(id_noeud, id_copie)
-                        for id_enfant in noeud.get_children().keys():
-                            b.add_edge(id_copie, id_enfant)
-                            b.remove_parallel_edges(id_noeud, id_enfant) # On retire entièrement les arêtes
-                    elif noeud.outdegree() == 0:           
-                        id_sortie = b.add_node()
-                        b.add_output_id(id_sortie)
-                        b.add_edge(id_noeud, id_sortie)
+                    ajouts_operateur(noeud,id_noeud)
                 b.get_node_by_id(id_noeud).set_label(label)
+            
             else: # cas 0,0, on enlève le noeud
                 b.remove_node_by_id(id_noeud)
 
-        if nbOutput!=None:
+        def get_unique_parent(id_noeud):
+            parents = b.get_node_by_id(id_noeud).get_parents()
+            if len(parents) != 1:
+                raise ValueError(f"Le noeud {id_noeud} n'a pas exactement un parent ({len(parents)} parents)")
+            return list(parents.keys())[0]
+        
+        if nbOutput is not None:
             if nbOutput <1:
                 raise ValueError("Le nombre de sorties doit être supérieur ou égal à 1")
             # Si il y a plus d'ouputs que ce qui est voulu alors on fusionne des sorties avec un opérateur binaire au hasard
-            # On relie directements l'unique parent de chaque sortie à l'opérateur
+            # On relie directements l'unique parent de chaque sortie à l'opérateur pour enlever les noeuds inutiles
             while len(b.outputs_ids()) > nbOutput:
-                id1, id2 = random.sample(b.outputs_ids(), 2)
-                id_parent1 = list(b.get_node_by_id(id1).get_parents().keys())[0]
-                id_parent2 = list(b.get_node_by_id(id2).get_parents().keys())[0]
+                id1, id2 = random.sample(b.outputs_ids(), 2) 
+                id_parent1 = get_unique_parent(id1)
+                id_parent2 = get_unique_parent(id2)
                 b.remove_node_by_id(id1)
                 b.remove_node_by_id(id2) # Supprime directement les arêtes associées
                 id_op = b.add_node()
                 b.add_edge(id_parent1, id_op)
                 b.add_edge(id_parent2, id_op)
+                node_op = b.get_node_by_id(id_op)
+                node_op.set_label(labelNoeudBinaire())
                 id_sortie = b.add_node()
                 b.add_output_id(id_sortie)
                 b.add_edge(id_op, id_sortie)
-                node_op = b.get_node_by_id(id_op)
-                label = ["|", "&"][random.randint(0,1)]
-                node_op.set_label(label)
+            # Si il y a moins d'outputs, on en ajoute en reliant des noeuds du graphe à de nouvelles sorties
             while len(b.outputs_ids()) < nbOutput:
-                id_noeud = random.choice(list(b.get_id_node_map().keys()))
-                if id_noeud in b.outputs_ids():
-                    continue
-                id_sortie = b.add_node()
-                b.add_output_id(id_sortie)
-                noeud=b.get_node_by_id(id_noeud)
-                # Si jamais le noeud choisi est un noeud d'operation alors il est nécessaire de d'ajouter un noeud de copie
-                if noeud.get_label() == "~" or noeud.get_label() == "&" or noeud.get_label() == "|":
-                    noeud_copie_id = b.add_node()
-                    for id_enfant in list(noeud.get_children().keys()):
-                        b.add_edge(noeud_copie_id, id_enfant)
-                        b.remove_parallel_edges(id_noeud, id_enfant) 
-                    b.add_edge(id_noeud, noeud_copie_id)
-                    b.add_edge(noeud_copie_id, id_sortie)
-                elif noeud.indegree() == 0: # Si c'est une entrée, elle a un seul enfant
-                    id_enfant = list(noeud.get_children().keys())[0] # On récupère l'id du noeud de copie
-                    noeud_enfant = b.get_node_by_id(id_enfant)
-                    if noeud_enfant.get_label() != "":
-                        id_copie = b.add_node()
-                        for id_enfant2 in list(noeud.get_children().keys()):
-                            b.remove_parallel_edges(id_noeud, id_enfant2)
-                            b.add_edge(id_copie, id_enfant2)   
-                        b.add_edge(id_noeud, id_copie)
-                        b.add_edge(id_copie, id_sortie)
-                    else: #Sinon l'enfant est un noeud de copie, on peut directement le relier à la sortie
-                        b.add_edge(id_enfant, id_sortie)
-                #Sinon c'est un noeud de copie, on peut directement le relier à la sortie
-                else:
-                    b.add_edge(id_noeud, id_sortie)
-        if nbInput!=None:
+                id_noeud = random.choice([id for id in b.get_node_ids() if id not in b.inputs_ids()]) # On choisit un noeud qui n'est pas une entrée 
+                if id_noeud  in b.outputs_ids(): # Si le noeud est un noeud de sortie on dédouble la sortie
+                    b.remove_output_id(id_noeud)
+                    id_sortie1 = b.add_node()
+                    id_sortie2 = b.add_node()
+                    b.add_output_id(id_sortie1)
+                    b.add_output_id(id_sortie2)
+                    b.add_edge(id_noeud, id_sortie1)
+                    b.add_edge(id_noeud, id_sortie2)
+
+                else :
+                    id_sortie = b.add_node()
+                    b.add_output_id(id_sortie)
+                    noeud=b.get_node_by_id(id_noeud)
+                    # Si jamais le noeud choisi est un noeud d'operation alors il est nécessaire de d'ajouter un noeud de copie
+                    if noeud.get_label() == "~" or noeud.get_label() == "&" or noeud.get_label() == "|":
+                        b.add_edge(id_noeud, id_sortie) # l'arête sera déplacées sur le noeud de copie dans l'appel suivant
+                        ajout_copie_outdegree(id_noeud, noeud)
+                    #Sinon c'est un noeud de copie, on peut directement le relier à la sortie
+                    else:
+                        b.add_edge(id_noeud, id_sortie)
+        if nbInput is not None:
             if nbInput <1:
                 raise ValueError("Le nombre d'entrées doit être supérieur ou égal à 1")
             # Si il y a plus d'inputs que ce qui est voulu alors on fusionne des entrées
             while len(b.inputs_ids()) > nbInput:
                 id1, id2 = random.sample(b.inputs_ids(), 2)
+                b.get_node_by_id(id1).set_label("") # On enlève le label des noeuds d'entrée pour la fusion
+                b.get_node_by_id(id2).set_label("")
                 b.merge_nodes(id1, id2)
                 if(len(b.get_node_by_id(id1).get_children().keys()) != 2):
-                    raise ValueError(f"Erreur defusion des noeuds d'entrée, le noeud fusionné n'a pas exactement 2 enfants ({len(b.get_node_by_id(id1).get_children().keys())})")
+                    raise ValueError(f"Erreur de fusion des noeuds d'entrée, le noeud fusionné n'a pas exactement 2 enfants ({len(b.get_node_by_id(id1).get_children().keys())})")
                 enfant1 = list(b.get_node_by_id(id1).get_children().keys())[0]
                 enfant2 = list(b.get_node_by_id(id1).get_children().keys())[1]
                 # On fusionne les noeuds de copie pour que l'entrée n'ait qu'un seul enfant
@@ -137,60 +167,37 @@ class bool_circ(open_digraph):
                 b.remove_edge(id1, enfant1) #La fusion double les arêtes, on en retire une
 
             while len(b.inputs_ids()) < nbInput:
-                nv_id = b.add_node()
-                b.add_input_id(nv_id)
-                # On veut un noeud qui ne soit pas un noeud d'entrée, de sortie ou de copie 
-                id_noeud = random.choice([node for node in b.get_id_node_map().keys() if node not in b.inputs_ids() and node not in b.outputs_ids() and b.get_node_by_id(node).get_label() in ["&", "~", "|"]])
-                id_parent = list(b.get_node_by_id(id_noeud).get_parents().keys())[0]
-                b.remove_parallel_edges(id_parent, id_noeud)
-                noeud_binaire_id = b.add_node()
-                b.add_edge(id_parent, noeud_binaire_id)
-                b.add_edge(noeud_binaire_id, id_noeud)
-                b.add_edge(nv_id, noeud_binaire_id)
-                node_binaire = b.get_node_by_id(noeud_binaire_id)
-                label = ["|", "&"][random.randint(0,1)]
-                node_binaire.set_label(label)
-        # On retire les noeuds de copie inutiles
-        for id_noeud, noeud in b.copy().get_id_node_map().items():
+                # On dédouble une entrée
+                id_noeud = random.choice([id for id in b.inputs_ids()]) # Il y a forcément une entrée car le graphe est acyclique 
+                entree1 = b.add_node()
+                b.add_input_id(entree1)
+                entree2 = b.add_node()
+                b.add_input_id(entree2)
+                b.remove_input_id(id_noeud)
+                op = b.add_node(label=labelNoeudBinaire())
+                b.add_edge(entree1, op)
+                b.add_edge(entree2, op)
+                b.add_edge(op, id_noeud)
+                
+        
+        # Enfin on retire les noeuds de copie inutiles
+        for id_noeud in b.copy().get_node_ids():
+            if id_noeud not in b.get_node_ids(): 
+                continue
+            noeud = b.get_node_by_id(id_noeud)
             if noeud.get_label() == "" and noeud.indegree() == 1 and noeud.outdegree() == 1:
                 id_parent = list(noeud.get_parents().keys())[0]
                 id_enfant = list(noeud.get_children().keys())[0]
                 b.add_edge(id_parent, id_enfant)
                 b.remove_node_by_id(id_noeud)
 
+
         return bool_circ(b)
 
     
-    def is_well_formed(self):
-        if self.is_cyclic():
-            return False
-        node_map = self.get_id_node_map()
-        for id_noeud, noeud in node_map.items():
-            for id_parent, multiplicite in noeud.get_parents().items():
-                if id_parent not in node_map:
-                    return False
-                if node_map[id_parent].outdegree() < multiplicite:
-                    return False
-            for id_enfant, multiplicite in noeud.get_children().items():
-                if id_enfant not in node_map:
-                    return False
-                if node_map[id_enfant].indegree() < multiplicite:
-                    return False
-        return True
-
    
-    def ancetres_communs_dist(self, id1, id2):
-        dist1, _ = self.longueurs_bfs(id1, direction=-1)
-        dist2, _ = self.longueurs_bfs(id2, direction=-1)
-        resultat = {}
-        for id in dist1.keys():
-            if id in dist2:
-                # ancêtre commun
-                resultat[id] = (dist1[id], dist2[id])
-        return resultat
 
-    
-      
+       
     @classmethod      
     def formula_to_tree(cls, s):
         b = cls.empty()
