@@ -377,13 +377,13 @@ class bool_circ(open_digraph):
         return b
     
     @classmethod
-    def half_adder(cls,n):
+    def half_adder(cls,n,retenue=0):
         adder = cls.adder(n)
         # on enlève la retenue entrante de l'adder
         inputs = adder.inputs_ids()
         id = inputs.pop()
         adder.set_inputs(inputs)
-        adder.get_node_by_id(id).set_label("0") # on fixe la retenue entrante à 0
+        adder.get_node_by_id(id).set_label(str(retenue)) 
         return adder 
     
     @classmethod
@@ -547,6 +547,10 @@ class bool_circ(open_digraph):
         registres= registre1.compo_parallele(registre2)
         adder3 = bool_circ.half_adder(3)
         circuit = registres.compo_sequentielle(adder3)
+        return circuit.evaluer() 
+    
+    def evaluer(self):
+        circuit = self.copy() # On travaille sur une copie du circuit pour ne pas modifier le circuit
         tri_topo = circuit.tri_topologique()
         for niveau in tri_topo:
             for id in niveau:
@@ -618,7 +622,155 @@ class bool_circ(open_digraph):
         for id in circuit.outputs_ids():
             node = circuit.get_node_by_id(id)
             if node.get_label() not in ["0", "1"]:
-                raise ValueError("Lles noeuds de sortie doivent avoir des valeurs binaires")
+                raise ValueError("Les noeuds de sortie doivent avoir des valeurs binaires")
             string_sortie += node.get_label()
         
         return int(string_sortie, 2)
+
+    @classmethod
+    def cla_adder4(cls,retenue=None):
+        cla = cls.empty()
+        copies = []
+        for i in range(8): # 2x 4 bits entrées
+            id_i = cla.add_node()
+            cla.add_input_id(id_i)
+            id_copie_i = cla.add_node()
+            cla.add_edge(id_i, id_copie_i)
+            copies.append(id_copie_i)
+        c0 = cla.add_node() #retenue entrante
+        if retenue is None:
+            cla.add_input_id(c0)
+        else:
+            cla.get_node_by_id(c0).set_label(retenue)
+        Gi = []
+        Pi = []
+        for i in range(4):
+            and_i = cla.add_node(label="&")
+            gi = cla.add_node()
+            cla.add_edge(copies[i], and_i)
+            cla.add_edge(copies[i+4], and_i)
+            cla.add_edge(and_i, gi)
+            Gi.append(gi)
+            xor_i = cla.add_node(label="^")
+            pi = cla.add_node()
+            cla.add_edge(copies[i], xor_i)
+            cla.add_edge(copies[i+4], xor_i)
+            cla.add_edge(xor_i, pi)
+            Pi.append(pi)
+        Ci = []
+        Gi.reverse()
+        Pi.reverse()
+        def opbin(node1,node2,op):
+            op_node = cla.add_node(label=op)
+            cla.add_edge(node1, op_node)
+            cla.add_edge(node2, op_node)
+            return op_node
+        #C4
+        p0andc0 = opbin(Pi[0], c0, "&")
+        p3andp2 = opbin(Pi[3], Pi[2], "&")
+        p3andp2andp1 = opbin(p3andp2, Pi[1], "&")
+        p3andp2andp1andp0andC0 = opbin(p3andp2andp1, p0andc0, "&")
+
+        p3andp2andp1andG0 = opbin(p3andp2andp1, Gi[0], "&")
+        
+        p3andp2andG1 = opbin(p3andp2, Gi[1], "&")
+
+        p3andg2 = opbin(Pi[3], Gi[2], "&")  
+        
+        g3orp3andg2 = opbin(Gi[3], p3andg2, "|")
+        p3andp2andp1andG0_or_p3andp2andp1andp0andC0 = opbin(p3andp2andp1andG0, p3andp2andp1andp0andC0, "|")
+
+        g3orp3andg2_or_p3andp2andG1 = opbin(g3orp3andg2, p3andp2andG1, "|")
+        c4 = opbin(g3orp3andg2_or_p3andp2andG1, p3andp2andp1andG0_or_p3andp2andp1andp0andC0, "|")
+
+        #C3
+        p2andp1 = opbin(Pi[2], Pi[1], "&")
+        p2andp1andp0andc0 = opbin(p2andp1, p0andc0, "&")
+        p2andp1andg0 = opbin(p2andp1, Gi[0], "&")
+        p2andg1 = opbin(Pi[2], Gi[1], "&")
+        g2orp2andg1 = opbin(Gi[2], p2andg1, "|")
+        g2orp2andg1_or_p2andp1andg0 = opbin(g2orp2andg1, p2andp1andg0, "|")
+        c3 = opbin(g2orp2andg1_or_p2andp1andg0, p2andp1andp0andc0, "|")
+
+        #C2
+        p1andp0 = opbin(Pi[1], Pi[0], "&")
+        p1andp0andc0 = opbin(p1andp0, c0, "&")
+        p1andg0 = opbin(Pi[1], Gi[0], "&")
+        g1orp1andg0 = opbin(Gi[1], p1andg0, "|")
+        c2 = opbin(g1orp1andg0, p1andp0andc0, "|")
+
+        #C1
+        c1 = opbin(Gi[0], p0andc0, "|")
+        retenues = [c3, c2, c1,c0]
+        Gi.reverse()
+        Pi.reverse()
+        cla.add_output_id(c4)
+        
+        for i in range(4):
+            si = opbin(Pi[i], retenues[i], "^")
+            cla.add_output_id(si)
+        return cla
+    
+    @classmethod
+    def cla_4_somme(cls, entier1, entier2):
+        cla = cls.cla_adder4(retenue="0")
+        registre1 = cls.registre(entier1, n=4)
+        registre2 = cls.registre(entier2, n=4)
+        registres= registre1.compo_parallele(registre2)
+        circuit = registres.compo_sequentielle(cla)
+        return circuit.evaluer()
+        
+    @classmethod      
+    def cla_adder(cls,n):
+        if(n<2):
+            return bool_circ.adder(n)
+        elif (n==2):
+            return bool_circ.cla_adder4()
+        else:
+            adder1 = bool_circ.cla_adder(n-1)
+            adder2 = bool_circ.cla_adder(n-1)
+            b = adder1.compo_parallele(adder2)
+            # l'adder de taille n a 2 registre de taille 2^n et un retenue entrante
+            # on sépare chaque registre en bits de poids faible et bits de poids fort
+            # Chaque adder a 2^(n-1) bits de poids fort (0 à 2^(n-1) -1) 2^n-1 bits de poids faible et une retenue 
+            k = 2**(n-1)
+            #On récupére les inputs après la compo (pour avoir le shift_indices)
+            inputsAdder1 = b.inputs_ids()[0:2*k + 1]
+            inputsAdder2 = b.inputs_ids()[2*k+1:4*k+2]
+            inputs_id = inputsAdder1[0:k]
+            inputs_id += inputsAdder2[0:k]
+            inputs_id += inputsAdder1[k:2*k]
+            inputs_id += inputsAdder2[k:2*k]
+            retenueEntranteAdder2 = inputsAdder2[2**(n)]
+            inputs_id.append(retenueEntranteAdder2)
+            b.set_inputs(inputs_id)
+            # Pour les sorties il suffit d'enlever la retenue sortante de l'adder 2
+            # l'adder 1 a une retenue sortante, 2^n-1 bits de sortie, puis il y a la retenue de l'adder 2
+            outputs = b.outputs_ids()
+            retenuesortanteAdder2 = outputs[2**(n-1)+1]
+            outputs.remove(retenuesortanteAdder2)
+            b.set_outputs(outputs)
+            # On relie la retenue sortante de l'adder 2 à la retenue entrante de l'adder 1
+            retenueEntranteAdder1 = inputsAdder1[2**(n)]
+            b.add_edge(retenuesortanteAdder2, retenueEntranteAdder1)
+
+            return b
+    
+    @classmethod
+    def cla_half_adder(cls,n,retenue=0):
+        adder = cls.cla_adder(n)
+        # on enlève la retenue entrante de l'adder
+        inputs = adder.inputs_ids()
+        id = inputs.pop()
+        adder.set_inputs(inputs)
+        adder.get_node_by_id(id).set_label(str(retenue)) # on fixe la retenue entrante à 0 par défaut
+        return adder
+
+    @classmethod
+    def cla_somme(cls, entier1, entier2):
+        registre1 = bool_circ.registre(entier1)
+        registre2 = bool_circ.registre(entier2)
+        registres= registre1.compo_parallele(registre2)
+        adder3 = bool_circ.cla_half_adder(3)
+        circuit = registres.compo_sequentielle(adder3)
+        return circuit.evaluer() 
