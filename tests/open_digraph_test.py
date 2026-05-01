@@ -461,12 +461,10 @@ class InitTest(unittest.TestCase):
         b3.save_as_dot_file("test_simplifie_naif_after.dot")
   
 
-    """
     def test_Somme(self):
         somme = bool_circ.somme(37,120)
         self.assertEqual(somme, 157)
         
-    """
 
         
 
