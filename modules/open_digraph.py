@@ -154,10 +154,8 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
     def copy(self):
         '''
         Renvoie une copie profonde du graphe.
-        
-        :param self: Description
         '''
-        return open_digraph(self.inputs.copy(), self.outputs.copy(), [node.copy() for node in self.nodes.values()])
+        return self.__class__(self.inputs.copy(), self.outputs.copy(), [node.copy() for node in self.nodes.values()])
     
     # Getter
 

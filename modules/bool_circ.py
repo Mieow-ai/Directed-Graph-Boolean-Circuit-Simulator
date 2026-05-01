@@ -5,24 +5,16 @@ from modules.open_digraph import open_digraph
 
 
 class bool_circ(open_digraph):
-    def __init__(self, g):
-        super().__init__(g.inputs.copy(), g.outputs.copy(), g.nodes.values())
+    def __init__(self, inputs, outputs=None, nodes=None):
+        if outputs is None and nodes is None:
+            g = inputs
+            super().__init__(g.inputs.copy(), g.outputs.copy(), g.nodes.values())
+        else:
+            super().__init__(inputs, outputs, nodes)
+            
         if not self.is_well_formed():
             raise ValueError("Le graphe fourni n'est pas un circuit booléen valide (acyclique avec contraintes de degré respectées)")
-    def compo_parallele(self, other):
-        return bool_circ(super().compo_parallele(other))
-    def compo_sequentielle(self, other):
-        return bool_circ(super().compo_sequentielle(other))
-    
-    @classmethod
-    def empty(cls):
-        """
-        Renvoie un circuit booléen vide.
-        
-        :param cls
-        """
-        return bool_circ(open_digraph.empty())
-    
+
     @classmethod      
     def acyclicToBoolRandom(cls, g, nbInput=None,nbOutput=None):
         if g.is_cyclic():

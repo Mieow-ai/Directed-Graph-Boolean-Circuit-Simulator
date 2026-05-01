@@ -183,8 +183,7 @@ class DisplayMixin:
 class CompositionMixin:
 
     def shift_indices(self, n):
-        from modules.open_digraph import open_digraph
-        if n == None:
+        if n is None:
             return self.copy()
         new_nodes = {}
         for id, node in self.nodes.items():
@@ -197,7 +196,7 @@ class CompositionMixin:
             new_nodes[new_id].set_children(new_children)
         new_inputs = [input_id + n for input_id in self.inputs]
         new_outputs = [output_id + n for output_id in self.outputs]
-        return open_digraph(new_inputs, new_outputs, new_nodes.values())
+        return self.__class__(new_inputs, new_outputs, new_nodes.values())
     
     def merge_nodes(self, id1, id2):
         n1 = self.get_node_by_id(id1)
@@ -223,17 +222,15 @@ class CompositionMixin:
         self.remove_node_by_id(id2)
 
     def compo_parallele(self, other):
-        from modules.open_digraph import open_digraph
         f = self.copy()
         shift = (f.max_id() + 1) if f.max_id() is not None else 0
         g = other.shift_indices(shift)
         inputs = f.inputs_ids() + g.inputs_ids()
         outputs = f.outputs_ids() + g.outputs_ids()
         nodes = f.get_nodes() + g.get_nodes()
-        return open_digraph(inputs, outputs, nodes)
+        return self.__class__(inputs, outputs, nodes)
     
     def compo_sequentielle(self, other):
-        from modules.open_digraph import open_digraph
         if (len(self.outputs_ids()) != len(other.inputs_ids())):
             raise ValueError("Graphes incompatibles (le nombre de sorties de f doit être égal au nombre d'entrées de g)")
         f = self.copy()
@@ -244,7 +241,7 @@ class CompositionMixin:
         foutputs = f.outputs_ids()
         ginputs = g.inputs_ids()
         nodes_list = f.get_nodes() + g.get_nodes()
-        combined = open_digraph(inputs, outputs, nodes_list)
+        combined = self.__class__(inputs, outputs, nodes_list)
         for i in range(len(foutputs)):
             fid = foutputs[i]
             gid = ginputs[i]
@@ -277,7 +274,6 @@ class CompositionMixin:
         return comp_id, comp_dict
     
     def connected_components_graphs(self):
-        from modules.open_digraph import open_digraph
         (inputs_globaux, outputs_globaux) = (self.inputs_ids().copy(), self.outputs_ids().copy())
         num_comps, comp_dict = self.connected_components()
         graphs = [self.empty() for _ in range(num_comps)]
@@ -377,8 +373,9 @@ class AlgoMixin:
                 g_copy.remove_node_by_id(id)
         return res
     
-    def profondeur_noeud(self, id_noeud):
-        tri = self.tri_topologique()
+    def profondeur_noeud(self, id_noeud, tri=None):
+        if tri is None: # Le paramètre optionnel permet d'optimiser certaines fonctions comme longest_path
+            tri = self.tri_topologique()
         for i in range(len(tri)):
             if id_noeud in tri[i]:
                 return i+1
@@ -390,8 +387,8 @@ class AlgoMixin:
     
     def longest_path(self,u,v):
         tri_topo = self.tri_topologique() # Vérifie en même temps que le graphe est acyclique
-        prof_u = self.profondeur_noeud(u)
-        prof_v = self.profondeur_noeud(v)
+        prof_u = self.profondeur_noeud(u, tri_topo) # On évite de rappeler le tri topologique 
+        prof_v = self.profondeur_noeud(v, tri_topo)
         if(prof_u >= prof_v):
             return None
         else:
@@ -423,15 +420,17 @@ class AlgoMixin:
         return None
     
     def is_cyclic(self):
-        g_copy = self.copy()
-        while len(g_copy.get_nodes()) > 0:
-            feuille_id = None
-            for id_noeud, noeud in g_copy.get_id_node_map().items():
-                if noeud.outdegree() == 0:
-                    feuille_id = id_noeud
-                    break
-            if feuille_id is None:
-                return True
-            g_copy.remove_node_by_id(feuille_id)
-        return False
+        noeud_deg = {id_noeud: noeud.outdegree() for id_noeud, noeud in self.nodes.items()} # Dictionnaire  noeud : degré sortant
+        queue = [id_noeud for id_noeud, outdegree in noeud_deg.items() if outdegree == 0] # Feuilles avec degré sortant nul
+        cpt = 0
+        while queue:
+            courant = queue.pop(0) # On supprime la feuille de la queue et virtuellement du graphe
+            cpt += 1
+            for parent_id, multi in self.nodes[courant].get_parents().items():
+                noeud_deg[parent_id] -= multi # Le degré sortant des parents diminue
+                if noeud_deg[parent_id] == 0: # Si il est à 0 on l'ajoute à la queue
+                    queue.append(parent_id)
+        # Sortie de la boucle lorsqu'il n'y a plus de cofeuilles
+        # Si il y a des noeuds restants, il y a un cycle
+        return cpt != len(self.nodes) 
     
