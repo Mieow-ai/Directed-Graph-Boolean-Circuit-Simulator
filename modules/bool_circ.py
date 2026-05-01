@@ -545,21 +545,13 @@ class bool_circ(open_digraph):
         registre1 = bool_circ.registre(entier1)
         registre2 = bool_circ.registre(entier2)
         registres= registre1.compo_parallele(registre2)
-        #On ajoute une retenue vide
-        retenue = registres.add_node()
-        registres.get_node_by_id(retenue).set_label("0")
-        retenueSortie = registres.add_node()
-        registres.add_output_id(retenueSortie)
-        registres.add_edge(retenue, retenueSortie)
-        adder3 = bool_circ.adder(3)
-        print(len(registres.outputs_ids()))
-        print(len(adder3.inputs_ids()))
+        adder3 = bool_circ.half_adder(3)
         circuit = registres.compo_sequentielle(adder3)
         tri_topo = circuit.tri_topologique()
         for niveau in tri_topo:
             for id in niveau:
                 node = circuit.get_node_by_id(id)
-                if node.get_label() == "0" or node.get_label() == "1":
+                if node.get_label() == "0" or node.get_label() == "1": # Cette ligne n'est utilisée que lors du passage du premier niveau
                     continue
                 elif node.get_label() == "" or node.get_label()==None: #Noeud de copie ou de sortie
                     if len(node.get_parents()) != 1:
