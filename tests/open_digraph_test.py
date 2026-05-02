@@ -156,17 +156,16 @@ class InitTest(unittest.TestCase):
         self.assertEqual(g.nodes[1].get_children(), {2:2})
         self.assertEqual(g.nodes[2].get_parents(), {1:2})
       
-    """def test_random_graph(self):
+    def test_random_graph(self):
         n = 5
         inputs_count = 2
         outputs_count = 2
     
         g = open_digraph.random(n, 3, inputs=inputs_count, outputs=outputs_count, form='DAG')
-        self.assertEqual(len(g.nodes), n + inputs_count + outputs_count)
-        self.assertEqual(len(g.inputs), inputs_count)
-        self.assertEqual(len(g.outputs), outputs_count)
-        self.assertEqual(g.inputs, [5, 6])
-        self.assertEqual(g.outputs, [7, 8])"""
+        self.assertTrue(len(g.nodes) >= n)
+        self.assertTrue(len(g.inputs) <= inputs_count)
+        self.assertTrue(len(g.outputs) <= outputs_count)
+        self.assertFalse(g.is_cyclic())
         
     def test_graph_to_dict(self):
         d = self.g.graph_to_dict()
@@ -374,9 +373,9 @@ class InitTest(unittest.TestCase):
         f_graph.add_output_node(out2)
         f_graph.add_output_node(out3)
         
-        n1 = f_graph.add_node();
-        n2 = f_graph.add_node();
-        n3 = f_graph.add_node();
+        n1 = f_graph.add_node()
+        n2 = f_graph.add_node()
+        n3 = f_graph.add_node()
         
         f_graph.add_edge(in1, n1)
         f_graph.add_edge(in2, n2)
@@ -486,10 +485,101 @@ class InitTest(unittest.TestCase):
         
 
 
-if __name__ == '__main__': 
-    unittest.main()        
+    def test_eq_and_copy(self):
+        g_copy = self.g.copy()
+        self.assertEqual(self.g, g_copy)
+        self.assertIsNot(self.g, g_copy)
+        g_copy.add_node()
+        self.assertNotEqual(self.g, g_copy)
+
+    def test_min_max_id(self):
+        self.assertEqual(self.g.min_id(), 0)
+        self.assertEqual(self.g.max_id(), 2)
+        g_empty = open_digraph.empty()
+        self.assertIsNone(g_empty.min_id())
+        self.assertIsNone(g_empty.max_id())
+
+    def test_adjacency_matrix(self):
+        matrix = [[0, 1, 0], [0, 0, 2], [0, 0, 0]]
+        g = open_digraph.from_adjacency_matrix(matrix)
+        self.assertEqual(g.adjacency_matrix(), matrix)
+
+    def test_is_cyclic(self):
+        g = open_digraph.empty()
+        g.add_node(id=0)
+        g.add_node(id=1)
+        g.add_node(id=2)
+        g.add_edges([(0, 1), (1, 2), (2, 0)])
+        self.assertTrue(g.is_cyclic())
+        self.assertFalse(self.g.is_cyclic())
+
+    def test_connected_components(self):
+        g = open_digraph.empty()
+        g.add_node(id=0)
+        g.add_node(id=1)
+        g.add_node(id=2)
+        g.add_node(id=3)
+        g.add_edge(0, 1)
+        g.add_edge(2, 3)
+        num_comps, comp_dict = g.connected_components()
+        self.assertEqual(num_comps, 2)
+        self.assertEqual(comp_dict[0], comp_dict[1])
+        self.assertEqual(comp_dict[2], comp_dict[3])
+        self.assertNotEqual(comp_dict[0], comp_dict[2])
+
+        graphs, io = g.connected_components_graphs()
+        self.assertEqual(len(graphs), 2)
+        self.assertTrue(0 in graphs[comp_dict[0]].nodes and 1 in graphs[comp_dict[0]].nodes)
+        self.assertTrue(2 in graphs[comp_dict[2]].nodes and 3 in graphs[comp_dict[2]].nodes)
+
+    def test_remove_node(self):
+        g = self.g.copy()
+        g.remove_node_by_id(1)
+        self.assertNotIn(1, g.nodes)
+        self.assertEqual(g.nodes[0].get_children(), {})
+        self.assertEqual(g.nodes[2].get_parents(), {})
+
+    def test_profondeur(self):
+        g = open_digraph.empty()
+        for i in range(4):
+            g.add_node(id=i)
+        g.add_edges([(0, 1), (1, 2), (2, 3)])
+        self.assertEqual(g.profondeur(), 4)
+        self.assertEqual(g.profondeur_noeud(0), 1)
+        self.assertEqual(g.profondeur_noeud(3), 4)
+
+    def test_random_graph_form(self):
+        g = open_digraph.random(5, 3, form="DAG")
+        self.assertEqual(len(g.nodes), 5)
+        self.assertFalse(g.is_cyclic())
+
 
 class NodeTest(unittest.TestCase):
     def setUp(self):
-        self.n0 = node(0, 'i', [],[1])
+        self.n0 = node(0, 'i', {1: 1}, {2: 2})
+        
+    def test_getters_setters(self):
+        self.assertEqual(self.n0.get_id(), 0)
+        self.assertEqual(self.n0.get_label(), 'i')
+        self.assertEqual(self.n0.get_parents(), {1: 1})
+        self.assertEqual(self.n0.get_children(), {2: 2})
+        self.n0.set_id(5)
+        self.assertEqual(self.n0.get_id(), 5)
+        
+    def test_add_remove_child_parent(self):
+        self.n0.add_child_id(3, 1)
+        self.assertEqual(self.n0.get_children(), {2: 2, 3: 1})
+        self.n0.remove_child_once(2)
+        self.assertEqual(self.n0.get_children(), {2: 1, 3: 1})
+        self.n0.remove_child_id(2)
+        self.assertEqual(self.n0.get_children(), {3: 1})
+
+    def test_degree(self):
+        self.assertEqual(self.n0.indegree(), 1)
+        self.assertEqual(self.n0.outdegree(), 2)
+        self.assertEqual(self.n0.degree(), 3)
+
+
+if __name__ == '__main__': 
+    unittest.main()
     

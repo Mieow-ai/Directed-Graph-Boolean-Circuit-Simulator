@@ -3,11 +3,24 @@ import os
 class MatrixMixin:
     @staticmethod
     def random_int_list(n, bound):
+        """
+        Crée une liste d'entiers aléatoires
+        param n: taille de la liste
+        param bound: borne supérieure
+        return: liste d'entiers aléatoires
+        """
         import random
         return [random.randrange(0, bound) for e in range(n)]
 
     @staticmethod
     def random_int_matrix(n, bound, null_diag=True):
+        """
+        Crée une matrice d'entiers aléatoires
+        param n: taille de la matrice
+        param bound: borne supérieure
+        param null_diag: si True, la diagonale est nulle
+        return: matrice d'entiers aléatoires
+        """
         res = [MatrixMixin.random_int_list(n, bound) for e in range(n)]
         if null_diag:
             for i in range(n):
@@ -16,6 +29,13 @@ class MatrixMixin:
 
     @staticmethod
     def random_symetric_int_matrix(n, bound, null_diag=True):
+        """
+        Crée une matrice symétrique d'entiers aléatoires
+        param n: taille de la matrice
+        param bound: borne supérieure
+        param null_diag: si True, la diagonale est nulle
+        return: matrice symétrique d'entiers aléatoires
+        """
         res = MatrixMixin.random_int_matrix(n, bound, null_diag)
         for i in range(n):
             for j in range(i+1, n):
@@ -24,6 +44,13 @@ class MatrixMixin:
 
     @staticmethod
     def random_oriented_int_matrix(n, bound, null_diag=True):
+        """
+        Crée une matrice orientée d'entiers aléatoires
+        param n: taille de la matrice
+        param bound: borne supérieure
+        param null_diag: si True, la diagonale est nulle
+        return: matrice orientée d'entiers aléatoires
+        """
         res = MatrixMixin.random_int_matrix(n, bound, null_diag)
         for i in range(n):
             for j in range(i+1, n):
@@ -33,6 +60,13 @@ class MatrixMixin:
 
     @staticmethod
     def random_triangular_int_matrix(n, bound, null_diag=True):
+        """
+        Crée une matrice triangulaire d'entiers aléatoires
+        param n: taille de la matrice
+        param bound: borne supérieure
+        param null_diag: si True, la diagonale est nulle
+        return: matrice triangulaire d'entiers aléatoires
+        """
         res = MatrixMixin.random_int_matrix(n, bound, null_diag)
         for i in range(n):
             for j in range(i+1, n):
@@ -40,6 +74,10 @@ class MatrixMixin:
         return res
 
     def graph_from_adjacency_matrix(self, matrix):
+        """
+        Construit et renvoie un graphe à partir d'une matrice
+        inputs et outputs restent vides
+        """
         dim = len(matrix)
         ids = []
         for i in range(dim):
@@ -54,8 +92,8 @@ class MatrixMixin:
     @classmethod
     def from_adjacency_matrix(cls, matrix):
         """
-        Construit et renvoie un multigraphe à partir d'une matrice.
-        inputs et outputs restent vides.
+        Construit et renvoie un graphe à partir d'une matrice
+        inputs et outputs restent vides
         """
         g = cls.empty()
         dim = len(matrix)
@@ -68,6 +106,9 @@ class MatrixMixin:
         return g
     
     def adjacency_matrix(self):
+        """
+        Renvoie la matrice d'adjacence du graphe
+        """
         n = len(self.nodes)
         matrix = [[0 for j in range(n)] for i in range(n)]
         id_to_index = self.graph_to_dict()
@@ -79,8 +120,13 @@ class MatrixMixin:
     @classmethod
     def random(cls, n, bound, inputs=0, outputs=0, form="free"):
         """
-        Génère un graphe aléatoire.
-        Options pour form : 
+        Génère un graphe aléatoire
+        param n: nombre de noeuds
+        param bound: borne supérieure
+        param inputs: nombre d'entrées
+        param outputs: nombre de sorties
+        param form: forme du graphe
+        Options pour form :
         - "free" : Graphe quelconque
         - "loop-free" : Graphe quelconque sans boucles sur soi-même
         - "undirected" : Graphe symétrique
@@ -115,6 +161,11 @@ class MatrixMixin:
 # MARK: - Display
 class DisplayMixin:
     def save_as_dot_file(self, path, verbose=False):
+        """
+        Sauvegarde le graphe au format .dot
+        param path: chemin du fichier
+        param verbose: si True, ajoute les ID
+        """
         # attribut isInput et isOutput
         with open(path, 'w') as f:
             f.write('Digraph G {\n')
@@ -135,6 +186,11 @@ class DisplayMixin:
             
     @classmethod
     def from_dot_file(cls, path):
+        """
+        Lit un fichier .dot et renvoie un graphe
+        param path: chemin du fichier
+        return: graphe
+        """
         with open(path, 'r') as f:
             g = cls.empty()
             while True:
@@ -165,6 +221,10 @@ class DisplayMixin:
         return g   
     
     def display(self, verbose=False):
+        """
+        Affiche le graphe sous forme de fichier PDF
+        param verbose: si True, ajoute les ID
+        """
         import webbrowser
         self.save_as_dot_file("temp.dot",verbose)
         commande = "dot -Tpdf temp.dot -o temp.pdf"
@@ -177,6 +237,11 @@ class DisplayMixin:
         webbrowser.open(chemin_pdf)
 
     def save_as_pdf(self, path, verbose=False):
+        """
+        Sauvegarde le graphe sous forme de fichier PDF
+        param path: chemin du fichier
+        param verbose: si True, ajoute les ID
+        """
         self.save_as_dot_file("temp.dot", verbose)
         commande = f"dot -Tpdf temp.dot -o {path}"
         print("Fichier .dot généré : temp.dot")
@@ -189,6 +254,11 @@ class DisplayMixin:
 class CompositionMixin:
 
     def shift_indices(self, n):
+        """
+        Crée un graphe dont les IDs sont décalés de n
+        param n: décalage
+        return: graphe décalé
+        """
         if n is None:
             return self.copy()
         new_nodes = {}
@@ -205,6 +275,12 @@ class CompositionMixin:
         return self.__class__(new_inputs, new_outputs, new_nodes.values())
     
     def merge_nodes(self, id1, id2):
+        """
+        Fusionne deux noeuds en un seul
+        param id1: id du premier noeud
+        param id2: id du second noeud
+        return: graphe fusionné
+        """
         n1 = self.get_node_by_id(id1)
         n2 = self.get_node_by_id(id2)
         if n1.get_label() != n2.get_label():
@@ -228,6 +304,11 @@ class CompositionMixin:
         self.remove_node_by_id(id2)
 
     def compo_parallele(self, other):
+        """
+        Composition parallèle de deux graphes
+        param other: autre graphe
+        return: graphe composé
+        """
         f = self.copy()
         shift = (f.max_id() + 1) if f.max_id() is not None else 0
         g = other.shift_indices(shift)
@@ -237,6 +318,11 @@ class CompositionMixin:
         return self.__class__(inputs, outputs, nodes)
     
     def compo_sequentielle(self, other):
+        """
+        Composition séquentielle de deux graphes
+        param other: autre graphe
+        return: graphe composé
+        """
         if (len(self.outputs_ids()) != len(other.inputs_ids())):
             raise ValueError("Graphes incompatibles (le nombre de sorties de f doit être égal au nombre d'entrées de g)")
         f = self.copy()
@@ -262,6 +348,10 @@ class CompositionMixin:
         return combined
     
     def connected_components(self):
+        """
+        Calcule les composantes connexes du graphe
+        return: dictionnaire des composantes connexes
+        """
         comp_dict = {}
         comp_id = 0
         for node_id in self.get_node_ids():
@@ -280,6 +370,10 @@ class CompositionMixin:
         return comp_id, comp_dict
     
     def connected_components_graphs(self):
+        """
+        Calcule les composantes connexes du graphe et renvoie un graphe pour chaque composante
+        return: dictionnaire des graphes des composantes connexes
+        """
         (inputs_globaux, outputs_globaux) = (self.inputs_ids().copy(), self.outputs_ids().copy())
         num_comps, comp_dict = self.connected_components()
         graphs = [self.empty() for _ in range(num_comps)]
@@ -297,6 +391,12 @@ class CompositionMixin:
 # MARK: - Algo
 class AlgoMixin:
     def longueurs_dfs(self, src, direction = 1) :
+        """
+        Calcule les longueurs des chemins depuis un noeud source avec DFS
+        param src: noeud source
+        param direction: direction du parcours
+        return: dictionnaire des longueurs
+        """
         prev = {}
         dist = {}
         if direction == 1:
@@ -312,22 +412,41 @@ class AlgoMixin:
         
                 
     def longueurs_aux(self, src, prev,dist, current_dist, parent):
-            childs = self.get_node_by_id(src).get_children()
-            if src not in dist or dist[src] > current_dist:
-                dist[src] = current_dist
-                prev[src] = parent
-                for child in childs.keys():
-                    self.longueurs_aux(child, prev, dist, current_dist + 1, src)
+        """
+        Calcul de la distance maximale depuis un noeud source   
+        param src: noeud source
+        param prev: dictionnaire des predecesseurs
+        param dist: dictionnaire des distances
+        param current_dist: distance actuelle
+        param parent: parent du noeud actuel
+        return: dictionnaire des distances
+        """
+        childs = self.get_node_by_id(src).get_children()
+        if src not in dist or dist[src] > current_dist:
+            dist[src] = current_dist
+            prev[src] = parent
+            for child in childs.keys():
+                self.longueurs_aux(child, prev, dist, current_dist + 1, src)
                 
     def longueurs_aux2(self, src, prev,dist, current_dist, enfant):
-            parents = self.get_node_by_id(src).get_parents()
-            if src not in dist or dist[src] > current_dist:
-                dist[src] = current_dist
-                prev[src] = enfant
-                for parent in parents.keys():
-                    self.longueurs_aux2(parent, prev, dist, current_dist + 1, src)         
+        """
+        Pareil que longueurs_aux mais pour les parents (direction -1)
+        """
+        parents = self.get_node_by_id(src).get_parents()
+        if src not in dist or dist[src] > current_dist:
+            dist[src] = current_dist
+            prev[src] = enfant
+            for parent in parents.keys():
+                self.longueurs_aux2(parent, prev, dist, current_dist + 1, src)         
 
     def longueurs_bfs(self, src, direction=1, tgt = None):
+        """
+        Calcule les longueurs des chemins depuis un noeud source avec BFS
+        param src: noeud source
+        param direction: direction du parcours
+        param tgt: noeud cible
+        return: dictionnaire des longueurs
+        """
         dist = {src: 0}
         prev = {}
         queue = [src]
@@ -349,6 +468,13 @@ class AlgoMixin:
         return dist, prev
     
     def shortest_path(self, src, tgt, direction = 1):
+        """
+        Calcule le plus court chemin entre un noeud source et un noeud cible avec BFS
+        param src: noeud source
+        param tgt: noeud cible
+        param direction: direction du parcours
+        return: distance et chemin
+        """
         dist, prev = self.longueurs_bfs(src, direction, tgt)
         distance = dist[tgt] if tgt in dist else None
         path = []
@@ -362,18 +488,27 @@ class AlgoMixin:
         return distance, path
     
     def ancetres_communs_dist(self, id1, id2):
+        """
+        Calcule les ancêtres communs entre deux noeuds
+        param id1: id du premier noeud
+        param id2: id du second noeud
+        return: dictionnaire des ancêtres communs
+        """
         dist1, _ = self.longueurs_bfs(id1, direction=-1)
         dist2, _ = self.longueurs_bfs(id2, direction=-1)
         resultat = {}
         for id in dist1.keys():
             if id in dist2:
-                # ancêtre commun
                 resultat[id] = (dist1[id], dist2[id])
         return resultat
 
 	# Tri topologique "compréssé vers le haut"                            
     # On réutilise une partie du code de is_cyclic
     def tri_topologique(self):
+        """
+        Tri topologique du graphe
+        return: liste des noeuds triés
+        """
         g_copy = self.copy()
         res = []
         while len(g_copy.get_nodes()) > 0:
@@ -390,6 +525,12 @@ class AlgoMixin:
         return res
     
     def profondeur_noeud(self, id_noeud, tri=None):
+        """
+        Calcule la profondeur d'un noeud
+        param id_noeud: id du noeud
+        param tri: tri topologique du graphe
+        return: profondeur du noeud
+        """
         if tri is None: # Le paramètre optionnel permet d'optimiser certaines fonctions comme longest_path
             tri = self.tri_topologique()
         for i in range(len(tri)):
@@ -398,10 +539,20 @@ class AlgoMixin:
         raise ValueError("l'id n'est pas dans le graphe")
     
     def profondeur(self):
+        """
+        Calcule la profondeur du graphe
+        return: profondeur du graphe
+        """
         tri = self.tri_topologique()
         return len(tri)
     
     def longest_path(self,u,v):
+        """
+        Calcule le plus long chemin entre un noeud source et un noeud cible avec DFS
+        param u: noeud source
+        param v: noeud cible
+        return: distance et chemin
+        """
         tri_topo = self.tri_topologique() # Vérifie en même temps que le graphe est acyclique
         prof_u = self.profondeur_noeud(u, tri_topo) # On évite de rappeler le tri topologique 
         prof_v = self.profondeur_noeud(v, tri_topo)
@@ -436,6 +587,10 @@ class AlgoMixin:
         return None
     
     def is_cyclic(self):
+        """
+        Vérifie si le graphe est cyclique
+        return: True si le graphe est cyclique, False sinon
+        """
         noeud_deg = {id_noeud: noeud.outdegree() for id_noeud, noeud in self.nodes.items()} # Dictionnaire  noeud : degré sortant
         queue = [id_noeud for id_noeud, outdegree in noeud_deg.items() if outdegree == 0] # Feuilles avec degré sortant nul
         cpt = 0

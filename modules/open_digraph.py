@@ -2,19 +2,24 @@ import os
 from modules import open_digraph_mx as mx
 # MARK: - Node
 class node:
+    """
+    Classe qui représente un noeud dans un graphe.
+    """
     def __init__(self, identity, label, parents, children):
-        '''
-        identity: int; its unique id in the graph
-        label: string;
-        parents: int->int dict; maps a parent node's id to its multiplicity
-        children: int->int dict; maps a child node's id to its multiplicity
-        '''
+        """
+        Initialise le noeud.
+        param identity: int, l'ID unique du noeud dans le graphe.
+        param label: string, l'étiquette du noeud.
+        param parents: dict (int->int), relie l'ID d'un parent à sa multiplicité.
+        param children: dict (int->int), relie l'ID d'un enfant à sa multiplicité.
+        """
         self.id = identity
         self.label = label
         self.parents = parents
         self.children = children
 
     def __str__(self):
+        """Affiche le noeud de manière lisible."""
         s = f"Node : {self.id}; label : {self.label}; parents : " + self.parents.__str__() + "; children :" + self.children.__str__() + ";\n"
         return s
     
@@ -22,6 +27,7 @@ class node:
         return self.__str__()
     
     def __eq__(self, other):
+        """Permet de vérifier si deux noeuds sont strictement identiques."""
         if not isinstance(other, node):
             return False
         return self.id == other.id and self.label == other.label and self.parents == other.parents and self.children == other.children
@@ -30,7 +36,7 @@ class node:
         """
         Renvoie une copie profonde du noeud.
         
-        :param self: Description
+        param self: Description
         """
         return node(self.id, self.label, self.parents.copy(), self.children.copy())
     
@@ -56,11 +62,13 @@ class node:
     def set_children(self, children):
         self.children = children
     def add_child_id(self, child_id, multiplicity):
+        """Ajoute un enfant ou augmente le nombre de liens vers lui s'il y est déjà."""
         if child_id in self.children:
             self.children[child_id] += multiplicity
         else:
             self.children[child_id] = multiplicity
     def add_parent_id(self, parent_id, multiplicity):
+        """Ajoute un parent ou augmente le nombre de liens depuis lui s'il y est déjà."""
         if parent_id in self.parents:
             self.parents[parent_id] += multiplicity
         else:
@@ -68,6 +76,7 @@ class node:
             
     # Méthodes
     def remove_parent_once(self, parent_id):
+        """Retire un seul lien avec un parent. S'il n'y est pas on lève l'erreur, s'il y est avec une multiplicité de 1 on le retire, s'il y est avec une multiplicité superieur à 1 on decrease la multiplicité"""
         if parent_id in self.parents:
             if self.parents[parent_id] > 1:
                 self.parents[parent_id] -= 1
@@ -79,6 +88,7 @@ class node:
             raise ValueError(f"Parent_id {parent_id} pas dans node {self.id}")
         
     def remove_child_once(self, child_id):
+        """Retire un seul lien avec un enfant. S'il n'y est pas on lève l'erreur, s'il y est avec une multiplicité de 1 on le retire, s'il y est avec une multiplicité superieur à 1 on decrease la multiplicité"""
         if child_id in self.children:
             if self.children[child_id] > 1:
                 self.children[child_id] -= 1
@@ -90,42 +100,52 @@ class node:
             raise ValueError(f"Child_id {child_id} pas dans node {self.id}")
         
     def remove_parent_id(self, parent_id):
+        """Retire complètement un parent"""
         if parent_id in self.parents:
             del self.parents[parent_id]
         else:
             raise ValueError(f"Parent_id {parent_id} pas dans node {self.id}")
     
     def remove_child_id(self, child_id):
+        """Retire complètement un enfant"""
         if child_id in self.children:
             del self.children[child_id]
         else:
             raise ValueError(f"Child_id {child_id} pas dans node {self.id}")
     
     def indegree(self):
+        """Retourne le degré entrant du noeud"""
         return sum(self.parents.values())
     
     def outdegree(self):
+        """Retourne le degré sortant du noeud"""
         return sum(self.children.values())
     
     def degree(self):
+        """Retourne le degré total du noeud"""
         return self.indegree() + self.outdegree()
         
 
     
 # MARK: - Digraph
 class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.AlgoMixin): # for open directed graph
-   
+    """
+    Classe représentant un graphe orienté ouvert.
+    Hérite des Mixins
+    """
     def __init__(self, inputs, outputs, nodes):
-        '''
-        inputs: int list; the ids of the input nodes
-        outputs: int list; the ids of the output nodes
-        nodes: node iter;
-        '''
+        """
+        Initialise le graphe.
+        param inputs: liste d'ID (les entrées)
+        param outputs: liste d'ID (les sorties)
+        param nodes: itérable de noeuds
+        """
         self.inputs = inputs
         self.outputs = outputs
         self.nodes = {node.id:node for node in nodes} # self.nodes: <int,node> dict
 
     def __str__(self):
+        """ Affichage du graphe """
         s = "Graph :\n"
         s += "Inputs : " + self.inputs.__str__() + "\n"
         s += "Outputs : " + self.outputs.__str__() + "\n"
@@ -135,9 +155,11 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
         return s
     
     def __repr__(self):
+        """ Affichage du graphe """
         return self.__str__()
     
     def __eq__(self, other):
+        """ Test d'égalité entre deux graphes """
         if not isinstance(other, open_digraph):
             return False
         return self.inputs == other.inputs and self.outputs == other.outputs and self.nodes == other.nodes
@@ -147,14 +169,14 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
         """
         Renvoie un graphe vide.
         
-        :param cls
+        param cls
         """
         return cls([],[],[])
     
     def copy(self):
-        '''
+        """
         Renvoie une copie profonde du graphe.
-        '''
+        """
         return self.__class__(self.inputs.copy(), self.outputs.copy(), [node.copy() for node in self.nodes.values()])
     
     # Getter
@@ -191,24 +213,29 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
     
     # Méthodes ajouts
     def new_id(self):
+        """ Génère un nouvel ID unique pour un noeud """
         if len(self.nodes) == 0:
             return 0
         else:
             return max(self.nodes.keys()) + 1
     
     def add_edge(self, src, tgt):
+        """ Ajoute une arête entre src et tgt """
         self.nodes[src].add_child_id(tgt, 1)
         self.nodes[tgt].add_parent_id(src, 1)
     
     def add_edgeM(self, src, tgt, multiplicity):
+        """ Ajoute une arête entre src et tgt avec une multiplicité """
         self.nodes[src].add_child_id(tgt, multiplicity)
         self.nodes[tgt].add_parent_id(src, multiplicity)
     
     def add_edges(self, edges):
+        """ Ajoute des arêtes entre src et tgt """
         for src, tgt in edges:
             self.add_edge(src, tgt)
             
     def add_node(self, label='', parents=None, children=None, id=None):
+        """ Ajoute un noeud au graphe et renvoie l'ID de ce noeud ajouté """
         if id is None:
             new_id = self.new_id()
         else:
@@ -224,6 +251,7 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
         return new_id
     
     def add_input_node(self, id, label=''):
+        """ Ajoute une arête entre l'entrée et le noeud id """
         if id not in self.nodes.keys():
             raise ValueError(f"Le noeud {id} n'existe pas dans le graphe")
         if id in self.outputs:
@@ -233,6 +261,7 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
         self.add_edge(new_id, id)
         
     def add_output_node(self, id, label=''):
+        """ Ajoute une arête entre le noeud id et la sortie """
         if id not in self.nodes.keys():
             raise ValueError(f"Le noeud {id} n'existe pas dans le graphe")
         if id in self.inputs:
@@ -244,14 +273,17 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
     # Méthodes de retrait
     
     def remove_edge(self, src, tgt):
+        """ Retire une arête entre src et tgt """
         self.nodes[src].remove_child_once(tgt)
         self.nodes[tgt].remove_parent_once(src)
     
     def remove_parallel_edges(self, src, tgt):
+        """ Retire toutes les arêtes entre src et tgt """
         self.nodes[src].remove_child_id(tgt)
         self.nodes[tgt].remove_parent_id(src)
     
     def remove_node_by_id(self, node_id):
+        """ Retire un noeud du graphe par son id """
         if node_id in self.nodes:
             for parent_id in list(self.nodes[node_id].get_parents().keys()):
                 self.remove_parallel_edges(parent_id, node_id)
@@ -266,22 +298,27 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
             raise ValueError(f"Node_id {node_id} pas dans le graphe")
         
     def removes_edges(self, edges):
+        """ Retire plusieurs arêtes du graphe """
         for src, tgt in edges:
             self.remove_edge(src, tgt)
     
     def remove_several_parallel_edges(self, edges):
+        """ Retire plusieurs arêtes parallèles du graphe """
         for src, tgt in edges:
             self.remove_parallel_edges(src, tgt)
     
     def remove_nodes_by_id(self, node_ids):
+        """ Retire plusieurs noeuds du graphe par leur id """
         for node_id in node_ids:
             self.remove_node_by_id(node_id)
             
     def __delitem__(self, node_id):
+        """ Retire un noeud du graphe par son id """
         self.remove_node_by_id(node_id)
     
     # Autres méthodes
     def well_formed(self):
+        """ Vérifie si le graphe est bien formé """
         for node_id in self.inputs + self.outputs:
             if node_id not in self.nodes:
                 return False
@@ -319,12 +356,14 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
         return True
     
     def assert_is_well_formed(self):
+        """ Vérifie si le graphe est bien formé et lève une exception s'il ne l'est pas """
         if not self.well_formed():
             raise ValueError("Graphe pas bien formé")
         
     
     @classmethod
     def identity(cls, n):
+        """ Renvoie un graphe avec n entrées et n sorties """
         g = cls.empty()
         for i in range(n):
             in_id = g.add_node()
@@ -336,18 +375,21 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
     
     # A quoi ça sert ? 
     def graph_to_dict(self):
+        """ Renvoie un dictionnaire qui associe chaque noeud du graphe à un entier """
         res = {}
         for i, node_id in enumerate(self.nodes.keys()):
             res[node_id] = i
         return res
         
     def min_id(self):
+        """ Renvoie le plus petit ID du graphe """
         if len(self.nodes) == 0:
             return None
         else:
             return min(self.nodes.keys())
         
     def max_id(self):
+        """ Renvoie le plus grand ID du graphe """
         if len(self.nodes) == 0:
             return None
         else:

@@ -5,7 +5,17 @@ from modules.open_digraph import open_digraph
 
 
 class bool_circ(open_digraph):
+    """
+    Représente un circuit booléen
+    Hérite de open_digraph
+    """
     def __init__(self, inputs, outputs=None, nodes=None):
+        """
+        Initialise le circuit booléen.
+        param inputs: liste d'ID (les entrées)
+        param outputs: liste d'ID (les sorties)
+        param nodes: itérable de noeuds
+        """
         if outputs is None and nodes is None:
             g = inputs
             super().__init__(g.inputs.copy(), g.outputs.copy(), g.nodes.values())
@@ -18,6 +28,10 @@ class bool_circ(open_digraph):
             raise ValueError("Le graphe fourni n'est pas un circuit booléen valide (acyclique avec contraintes de degré respectées)")
     
     def is_well_formed(self):
+        """
+        Vérifie que le circuit n'a pas de boucle infinie et que les portes logiques ont le bon nombre de connexions.
+        return: True si le circuit est bien formé, False sinon
+        """
         if self.is_cyclic():
             print("Le graphe est cyclique")
             return False
@@ -41,16 +55,33 @@ class bool_circ(open_digraph):
     
     @classmethod      
     def acyclicToBoolRandom(cls, g, nbInput=None,nbOutput=None):
+        """
+        Convertit un graphe acyclique en circuit booléen aléatoire.
+        param g: graphe acyclique
+        param nbInput: nombre d'entrées
+        param nbOutput: nombre de sorties
+        return: circuit booléen aléatoire
+        """
         if g.is_cyclic():
             raise ValueError("Le graphe n'est pas acyclique, impossible")
         else:
             b = g.copy()
         if g.get_node_ids() == [] and (nbInput is not None or nbOutput is not None):
             b = cls.identity(1)
+
         def labelNoeudBinaire():
+            """
+            Renvoie un label pour un noeud binaire aléatoire.
+            return: label "|" ou "&"
+            """
             return ["|", "&"][random.randint(0,1)]
 
         def ajout_copie_outdegree(id_noeud,noeud):
+            """
+            Ajoute un noeud de copie avec un degré sortant de 1.
+            param id_noeud: ID du noeud
+            param noeud: noeud
+            """
             id_copie = b.add_node()
             for id_enfant in list(noeud.get_children().keys()):
                 b.add_edge(id_copie, id_enfant)
@@ -58,6 +89,10 @@ class bool_circ(open_digraph):
             b.add_edge(id_noeud, id_copie)
 
         def ajout_sortie(id_noeud):
+            """
+            Ajoute une sortie au noeud
+            param id_noeud: ID du noeud
+            """
             id_sortie = b.add_node()
             b.add_output_id(id_sortie)
             if id_noeud in b.outputs_ids():
@@ -65,6 +100,11 @@ class bool_circ(open_digraph):
             b.add_edge(id_noeud, id_sortie)
 
         def ajouts_operateur(noeud,id_noeud):
+            """
+            Ajoute un opérateur au noeud
+            param noeud: noeud
+            param id_noeud: ID du noeud
+            """
             # Un operateur a une seule sortie, sinon il faut ajouter un noeud de copie après lui
             if noeud.outdegree() > 1:
                     ajout_copie_outdegree(id_noeud,noeud)
@@ -102,6 +142,11 @@ class bool_circ(open_digraph):
                 b.remove_node_by_id(id_noeud)
 
         def get_unique_parent(id_noeud):
+            """
+            Renvoie l'unique parent du noeud
+            param id_noeud: ID du noeud
+            return: ID du parent
+            """
             parents = b.get_node_by_id(id_noeud).get_parents()
             if len(parents) != 1:
                 raise ValueError(f"Le noeud {id_noeud} n'a pas exactement un parent ({len(parents)} parents)")
@@ -200,6 +245,11 @@ class bool_circ(open_digraph):
        
     @classmethod      
     def formula_to_tree(cls, s):
+        """
+        Convertit une formule en arbre
+        param s: formule
+        return: arbre
+        """
         b = cls.empty()
         current_node_id = b.add_node()
         current_node = b.get_node_by_id(current_node_id)
@@ -249,6 +299,11 @@ class bool_circ(open_digraph):
     
     @classmethod      
     def formula_to_treeExtend(cls, *args):
+        """
+        Convertit plusieurs formules en arbres.
+        param args: formules
+        return: arbres
+        """
         b = cls.empty()
 
         for s in args:
@@ -299,6 +354,11 @@ class bool_circ(open_digraph):
     
     @classmethod      
     def adder(cls,n):
+        """
+        Crée un additionneur de taille n
+        param n: taille de l'additionneur
+        return: additionneur
+        """
         if(n==0):
             return bool_circ.adder0()
         else:
@@ -378,6 +438,12 @@ class bool_circ(open_digraph):
     
     @classmethod
     def half_adder(cls,n,retenue=0):
+        """
+        Crée un additionneur de taille n avec une retenue entrante de 0.
+        param n: taille de l'additionneur
+        param retenue: retenue entrante
+        return: additionneur
+        """
         adder = cls.adder(n)
         # on enlève la retenue entrante de l'adder
         inputs = adder.inputs_ids()
@@ -388,6 +454,12 @@ class bool_circ(open_digraph):
     
     @classmethod
     def registre(cls,entier, n=8):
+        """
+        Crée un registre de taille n avec un entier. 
+        param entier: entier à convertir en registre
+        param n: taille du registre
+        return: registre
+        """
         if(entier >= 2**n):
             raise ValueError("Entier trop grand")
         binaire = bin(entier)[2:]
@@ -404,6 +476,10 @@ class bool_circ(open_digraph):
         return b
     
     def simplifier_copie(self):
+        """
+        Simplifie les copies de noeuds
+        return: True si des copies ont été simplifiées, False sinon
+        """
         res = False
         for id, noeud in list(self.get_id_node_map().items()):
             if id not in self.get_id_node_map(): continue
@@ -425,6 +501,10 @@ class bool_circ(open_digraph):
         return res
     
     def simplifier_non(self):
+        """
+        Simplifie les non de noeuds
+        return: True si des non ont été simplifiés, False sinon
+        """
         res = False
         for id, noeud in list(self.get_id_node_map().items()):
             if id not in self.get_id_node_map(): continue
@@ -447,6 +527,10 @@ class bool_circ(open_digraph):
         return res
                 
     def simplifier_et(self):
+        """
+        Simplifie les et de noeuds
+        return: True si des et ont été simplifiés, False sinon
+        """
         res = False
         for id, noeud in list(self.get_id_node_map().items()):
             if id not in self.get_id_node_map(): continue
@@ -469,6 +553,10 @@ class bool_circ(open_digraph):
         return res
 
     def simplifier_ou(self):
+        """
+        Simplifie les ou de noeuds
+        return: True si des ou ont été simplifiés, False sinon
+        """
         res = False
         for id, noeud in list(self.get_id_node_map().items()):
             if id not in self.get_id_node_map(): continue
@@ -491,6 +579,10 @@ class bool_circ(open_digraph):
         return res
     
     def simplifier_ou_exclusif(self):
+        """
+        Simplifie les ou exclusif de noeuds
+        :return: True si des ou exclusif ont été simplifiés, False sinon
+        """
         res = False
         for id, noeud in list(self.get_id_node_map().items()):
             if id not in self.get_id_node_map(): continue
@@ -512,6 +604,10 @@ class bool_circ(open_digraph):
         return res
     
     def simplifier_neutre(self):
+        """
+        Simplifie les neutres de noeuds
+        return: True si des neutres ont été simplifiés, False sinon
+        """
         res = False
         for id, noeud in list(self.get_id_node_map().items()):
             if id not in self.get_id_node_map(): continue
@@ -535,13 +631,22 @@ class bool_circ(open_digraph):
                     flag = True # On relance car sa suppression a peut-être créé un nouveau nœud mort au-dessus
 
     def simplifier_naif(self):
-        flag = True;
+        """
+        Simplifie le circuit de manière naïve
+        """
+        flag = True
         while flag:
             flag = self.simplifier_copie() or self.simplifier_non() or self.simplifier_et() or self.simplifier_ou() or self.simplifier_ou_exclusif() or self.simplifier_neutre()
         self.nettoyer_noeuds_morts()
 
     @classmethod
     def somme(cls, entier1, entier2):
+        """
+        Calcule la somme de deux entiers en passant par les additionneurs de half_adder
+        :param entier1: premier entier
+        :param entier2: deuxième entier
+        :return: somme
+        """
         registre1 = bool_circ.registre(entier1)
         registre2 = bool_circ.registre(entier2)
         registres= registre1.compo_parallele(registre2)
@@ -550,6 +655,10 @@ class bool_circ(open_digraph):
         return circuit.evaluer() 
     
     def evaluer(self):
+        """
+        Parcours le circuit de haut en bas (via un tri topologique) 
+        et calcule la sortie finale en appliquant les règles des portes logiques (&, |, ^, ~)
+        """
         circuit = self.copy() # On travaille sur une copie du circuit pour ne pas modifier le circuit
         tri_topo = circuit.tri_topologique()
         for niveau in tri_topo:
