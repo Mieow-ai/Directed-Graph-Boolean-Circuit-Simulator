@@ -471,13 +471,17 @@ class InitTest(unittest.TestCase):
     
     def test_cla_adder4(self):
         cla = bool_circ.cla_adder4()
-        cla.save_as_pdf("test_cla_adder4bits.pdf")
+        #cla.save_as_pdf("test_cla_adder4bits.pdf")
 
     def test_cla_adder(self):
         cla = bool_circ.cla_adder(3)
-        cla.save_as_pdf("test_cla_adder3.pdf")
+        #cla.save_as_pdf("test_cla_adder3.pdf")
         somme = bool_circ.cla_somme(37,120)
         self.assertEqual(somme, 157)
+        
+    def test_cla_adder16(self):
+        somme = bool_circ.cla_somme16(28240,12345)
+        self.assertEqual(somme, 28240+12345)
 
         
 
