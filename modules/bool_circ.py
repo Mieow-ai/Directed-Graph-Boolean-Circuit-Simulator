@@ -280,8 +280,6 @@ class bool_circ(open_digraph):
                         b.merge_nodes(id1, id2)
                         niveau1_id.remove(id2)
         # On modifie pour ajouter des noeuds d'entrées liées aux noeuds de copies
-        tri_topo = b.tri_topologique()
-        niveau1_id = tri_topo[0]
         liste_ids = list(niveau1_id)
         inputs_list = []
         for id1 in liste_ids:
