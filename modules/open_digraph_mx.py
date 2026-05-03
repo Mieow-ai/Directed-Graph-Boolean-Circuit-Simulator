@@ -414,7 +414,7 @@ class AlgoMixin:
                 
     def longueurs_aux(self, src, prev,dist, current_dist, parent):
         """
-        Calcul de la distance maximale depuis un noeud source   
+        Calcul de la distance minimale depuis un noeud source   
         param src: noeud source
         param prev: dictionnaire des predecesseurs
         param dist: dictionnaire des distances
@@ -494,7 +494,7 @@ class AlgoMixin:
         Calcule les ancêtres communs entre deux noeuds
         param id1: id du premier noeud
         param id2: id du second noeud
-        return: dictionnaire des ancêtres communs
+        return: dictionnaire des ancêtres communs avec distances respectives vers id1 et id2
         """
         dist1, _ = self.longueurs_bfs(id1, direction=-1)
         dist2, _ = self.longueurs_bfs(id2, direction=-1)
