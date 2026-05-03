@@ -179,6 +179,9 @@ class InitTest(unittest.TestCase):
         # self.g.display(True)
         self.assertEqual(self.g, g2)
         os.remove('test.dot')
+        #self.g.save_as_pdf('Graphe_g.pdf') 
+        #self.g.save_as_pdf('Graphe_g_verbose.pdf', verbose=True) 
+
     
     def test_compo_parallele(self):
         # Composition de deux graphes vides est un graphe vide
@@ -425,8 +428,8 @@ class InitTest(unittest.TestCase):
         #b.save_as_dot_file("test_acyclicToBoolRandomAfter.dot")
         print(len(b.outputs_ids()))
         #b.display()
-
-    def test_acyclicToBoolRandom_vide(self):
+       
+    def test_acyclicToBoolRandom_depuis_vide(self):
         g = open_digraph.empty()
         b = bool_circ.acyclicToBoolRandom(g, nbInput=2, nbOutput=3)
         self.assertEqual(len(b.inputs_ids()), 2)
@@ -434,10 +437,11 @@ class InitTest(unittest.TestCase):
         b = bool_circ.acyclicToBoolRandom(g)
         self.assertEqual(len(b.inputs_ids()), 0)
         self.assertEqual(b, bool_circ.empty())
-
-
+        
     def test_Adder(self):
         #bool_circ.adder0().display()
+        #bool_circ.adder0().save_as_pdf("adder0.pdf")
+        #bool_circ.half_adder(0).save_as_pdf("halfadder0.pdf")
         #bool_circ.adder(1).display()
         return
     
@@ -455,36 +459,10 @@ class InitTest(unittest.TestCase):
         g.add_edges(edges)
         b2 = bool_circ.acyclicToBoolRandom(g,nbInput=8)
         b3 = b.compo_sequentielle(b2)
-        b3.save_as_dot_file("test_simplifie_naif_before.dot")
+        #b3.save_as_dot_file("test_simplifie_naif_before.dot")
         b3.simplifier_naif()
-        b3.save_as_dot_file("test_simplifie_naif_after.dot")
+        #b3.save_as_dot_file("test_simplifie_naif_after.dot")
   
-
-    def test_Somme(self):
-        somme = bool_circ.somme(37,120)
-        self.assertEqual(somme, 157)
-    
-    def test_Somme_cla_4_bits(self):
-        somme = bool_circ.cla_4_somme(6, 12)
-        self.assertEqual(somme, 18)
-    
-    def test_cla_adder4(self):
-        cla = bool_circ.cla_adder4()
-        #cla.save_as_pdf("test_cla_adder4bits.pdf")
-
-    def test_cla_adder(self):
-        cla = bool_circ.cla_adder(3)
-        #cla.save_as_pdf("test_cla_adder3.pdf")
-        somme = bool_circ.cla_somme(37,120)
-        self.assertEqual(somme, 157)
-        
-    def test_cla_adder16(self):
-        somme = bool_circ.cla_somme16(28240,12345)
-        self.assertEqual(somme, 28240+12345)
-
-        
-
-
     def test_eq_and_copy(self):
         g_copy = self.g.copy()
         self.assertEqual(self.g, g_copy)
@@ -553,6 +531,29 @@ class InitTest(unittest.TestCase):
         self.assertEqual(len(g.nodes), 5)
         self.assertFalse(g.is_cyclic())
 
+    def test_Somme(self):
+        somme = bool_circ.somme(37,120)
+        self.assertEqual(somme, 157)
+    
+    def test_Somme_cla_4_bits(self):
+        somme = bool_circ.cla_somme4(6, 12)
+        self.assertEqual(somme, 18)
+    
+    def test_cla_adder4(self):
+        cla = bool_circ.cla_adder4()
+        #cla.save_as_pdf("test_cla_adder4bits.pdf")
+
+    def test_cla_addern(self):
+        cla = bool_circ.cla_adder(3)
+        #cla.save_as_pdf("test_cla_adder3.pdf")
+        somme = bool_circ.cla_somme(37,120)
+        self.assertEqual(somme, 157)
+        
+    def test_cla_adder16(self):
+        cla= bool_circ.cla_adder16()
+        #cla.save_as_pdf("test_cla_adder16bits.pdf")
+        somme = bool_circ.cla_somme16(28240,12345)
+        self.assertEqual(somme, 28240+12345)
 
 class NodeTest(unittest.TestCase):
     def setUp(self):

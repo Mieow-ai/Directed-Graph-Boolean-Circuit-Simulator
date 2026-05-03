@@ -372,7 +372,7 @@ class CompositionMixin:
     def connected_components_graphs(self):
         """
         Calcule les composantes connexes du graphe et renvoie un graphe pour chaque composante
-        return: dictionnaire des graphes des composantes connexes
+        return: dictionnaire des graphes des composantes connexes, liste des inputs globaux, liste des outputs globaux
         """
         (inputs_globaux, outputs_globaux) = (self.inputs_ids().copy(), self.outputs_ids().copy())
         num_comps, comp_dict = self.connected_components()
@@ -390,6 +390,7 @@ class CompositionMixin:
 
 # MARK: - Algo
 class AlgoMixin:
+    # Ancienne fonction pour calculer les longueurs, dysfonctionne dans certains cas
     def longueurs_dfs(self, src, direction = 1) :
         """
         Calcule les longueurs des chemins depuis un noeud source avec DFS
@@ -439,12 +440,13 @@ class AlgoMixin:
             for parent in parents.keys():
                 self.longueurs_aux2(parent, prev, dist, current_dist + 1, src)         
 
+    # Fonction valide des calculs de longueurs
     def longueurs_bfs(self, src, direction=1, tgt = None):
         """
         Calcule les longueurs des chemins depuis un noeud source avec BFS
         param src: noeud source
         param direction: direction du parcours
-        param tgt: noeud cible
+        param tgt: optionnel : noeud cible (l'algorithme s'arrête des que la distance minimale vers tgt est connue)
         return: dictionnaire des longueurs
         """
         dist = {src: 0}

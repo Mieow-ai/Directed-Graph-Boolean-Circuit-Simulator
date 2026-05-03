@@ -35,7 +35,6 @@ class node:
     def copy(self):
         """
         Renvoie une copie profonde du noeud.
-        
         param self: Description
         """
         return node(self.id, self.label, self.parents.copy(), self.children.copy())
@@ -168,8 +167,6 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
     def empty(cls):
         """
         Renvoie un graphe vide.
-        
-        param cls
         """
         return cls([],[],[])
     

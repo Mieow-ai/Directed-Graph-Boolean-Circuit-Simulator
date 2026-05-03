@@ -78,7 +78,7 @@ class bool_circ(open_digraph):
 
         def ajout_copie_outdegree(id_noeud,noeud):
             """
-            Ajoute un noeud de copie avec un degré sortant de 1.
+            Ajoute un noeud de copie en sortie du noeud
             param id_noeud: ID du noeud
             param noeud: noeud
             """
@@ -101,7 +101,7 @@ class bool_circ(open_digraph):
 
         def ajouts_operateur(noeud,id_noeud):
             """
-            Ajoute un opérateur au noeud
+            Gère les ajouts de noeuds en sortie pour respecter les contraintes de degré des opérateurs et des sorties
             param noeud: noeud
             param id_noeud: ID du noeud
             """
@@ -144,6 +144,7 @@ class bool_circ(open_digraph):
         def get_unique_parent(id_noeud):
             """
             Renvoie l'unique parent du noeud
+            Lève une erreur si le noeud n'a pas exactement un parent
             param id_noeud: ID du noeud
             return: ID du parent
             """
@@ -239,14 +240,10 @@ class bool_circ(open_digraph):
 
         return bool_circ(b)
 
-    
-   
-
-       
     @classmethod      
     def formula_to_tree(cls, s):
         """
-        Convertit une formule en arbre
+        Convertit une formule logique en arbre (circuit booléen).
         param s: formule
         return: arbre
         """
@@ -393,6 +390,10 @@ class bool_circ(open_digraph):
 
     @classmethod
     def adder0(cls):
+        """
+        Crée un additionneur de taille 0
+        return: additionneur
+        """
         b = cls.empty()
         entree1 = b.add_node()
         b.add_input_id(entree1)
@@ -439,7 +440,7 @@ class bool_circ(open_digraph):
     @classmethod
     def half_adder(cls,n,retenue=0):
         """
-        Crée un additionneur de taille n avec une retenue entrante de 0.
+        Crée un additionneur de taille n et initialise la retenue entrante (0 par défaut)
         param n: taille de l'additionneur
         param retenue: retenue entrante
         return: additionneur
@@ -455,7 +456,8 @@ class bool_circ(open_digraph):
     @classmethod
     def registre(cls,entier, n=8):
         """
-        Crée un registre de taille n avec un entier. 
+        Crée un registre de taille n représentant un entier. 
+        Lève une erreur si l'entier ne peut pas être représenté sur n bits.
         param entier: entier à convertir en registre
         param n: taille du registre
         return: registre
@@ -658,6 +660,7 @@ class bool_circ(open_digraph):
         """
         Parcours le circuit de haut en bas (via un tri topologique) 
         et calcule la sortie finale en appliquant les règles des portes logiques (&, |, ^, ~)
+        return : entier correspondant à la sortie du circuit
         """
         circuit = self.copy() # On travaille sur une copie du circuit pour ne pas modifier le circuit
         tri_topo = circuit.tri_topologique()
@@ -737,7 +740,13 @@ class bool_circ(open_digraph):
         return int(string_sortie, 2)
 
     @classmethod
-    def cla_adder4(cls,retenue=None,superCla = False):
+    def cla_adder4(cls,retenue=None, superCla = False):
+        """
+        Crée un additionneur de 4 bits via un Carry Look Ahead
+        param: retenue : valeur de la retenue entrante (0 ou 1), None sinon (la retenue entrante est alors une entrée du circuit)
+        param: superCla : True si l'adder est utilisé pour un adder cla de taille supérieure (ajoute le bit de génération et de propagation de groupe en sortie)
+        return: additionneur
+        """
         cla = cls.empty()
         copies = []
         for i in range(8): # 2x 4 bits entrées
@@ -751,6 +760,7 @@ class bool_circ(open_digraph):
             cla.add_input_id(c0)
         else:
             cla.get_node_by_id(c0).set_label(retenue)
+
         Gi = []
         Pi = []
         for i in range(4):
@@ -780,11 +790,29 @@ class bool_circ(open_digraph):
         return cla
     
     def opbin(self, node1, node2, op):
-                op_node = self.add_node(label=op)
-                self.add_edge(node1, op_node)
-                self.add_edge(node2, op_node)
-                return op_node
+        """
+        Lie deux noeuds à un opérateur binaire et retourne le noeud opérateur
+        param node1: id du premier noeud
+        param node2: id du second noeud
+        param op: opérateur binaire ("&", "|", "^")
+        return: le noeud opérateur
+        """
+        op_node = self.add_node(label=op)
+        self.add_edge(node1, op_node)
+        self.add_edge(node2, op_node)
+        return op_node
+    
     def cla_comp(self, Pi,Gi,c0):
+            """
+            param: Pi, liste des ids des noeuds représentant le bit de propagation de retenue de chaque addition bit à bit
+            param: Gi, liste des ids des noeuds représentant le bit de génération de retenuede chaque addition bit à bit
+            param: c0, id du noeud représentant la retenue entrante du bloc cla
+            return: retenues, P_groupe, G_groupe, c4
+            retenues : Les retenues intermédiaires c0, c1, c2, c3
+            P_groupe : le bit (le noeud) de propagation de retenue du bloc cla
+            G_groupe : le bit de génération de retenue du bloc cla (utile pour l'adder de 16 bits)
+            c4 : la retenue sortante du bloc (utile pour l'adder de 4 bits)
+            """
             Gi.reverse()
             Pi.reverse()
             #C4
@@ -832,9 +860,13 @@ class bool_circ(open_digraph):
             Pi.reverse()
             return retenues, P_groupe, G_groupe, c4
             
-
     @classmethod
-    def cla_4_somme(cls, entier1, entier2):
+    def cla_somme4(cls, entier1, entier2):
+        """
+        Somme de deux entiers sur 4 bits via un adder cla de 4 bits
+        param: entier1
+        param: entier2
+        """
         cla = cls.cla_adder4(retenue="0")
         registre1 = cls.registre(entier1, n=4)
         registre2 = cls.registre(entier2, n=4)
@@ -844,11 +876,17 @@ class bool_circ(open_digraph):
         
     @classmethod      
     def cla_adder(cls,n):
+        """
+        Construit un adder de taille 2^n via des blocs de cla de 4 bits
+        param n: exposant de la taille de l'adder
+        return: adder de taille 2^n
+        """
         if(n<2):
             return bool_circ.adder(n)
         elif (n==2):
             return bool_circ.cla_adder4()
         else:
+            # Réutilisation du bloc de récursion de l'adder classique pour lier des blocs cla de 4 bits
             adder1 = bool_circ.cla_adder(n-1)
             adder2 = bool_circ.cla_adder(n-1)
             b = adder1.compo_parallele(adder2)
@@ -880,6 +918,12 @@ class bool_circ(open_digraph):
     
     @classmethod
     def cla_half_adder(cls,n,retenue=0):
+        """
+        Construit un half-adder de taille 2^n via des blocs de cla de 4 bits
+        param n: exposant de la taille de l'adder
+        param retenue: valeur de la retenue entrante (0 ou 1) 
+        return: half-adder de taille 2^n
+        """
         adder = cls.cla_adder(n)
         # on enlève la retenue entrante de l'adder
         inputs = adder.inputs_ids()
@@ -890,6 +934,12 @@ class bool_circ(open_digraph):
 
     @classmethod
     def cla_somme(cls, entier1, entier2):
+        """
+        Somme de deux entiers sur 8 bits via un half adder composé de deux adders cla de 4 bits
+        param: entier1
+        param: entier2
+        return : somme de entier1 et entier2
+        """
         registre1 = bool_circ.registre(entier1)
         registre2 = bool_circ.registre(entier2)
         registres= registre1.compo_parallele(registre2)
@@ -899,7 +949,12 @@ class bool_circ(open_digraph):
     
     @classmethod 
     def cla_adder16(cls):
-        
+        """
+        Crée un adder de 16 bits via 4 adders cla de 4 bits en utilisant le Carry Look Ahead pour connaitre les retenues de blocs
+        Adder avec une Profondeur constante
+        return: adder de 16 bits
+
+        """
         cla4_1 = cls.cla_adder4(superCla=True)
         cla4_2 = cls.cla_adder4(superCla=True)
         cla4_3 = cls.cla_adder4(superCla=True)
@@ -929,6 +984,11 @@ class bool_circ(open_digraph):
      
     @classmethod
     def cla_half_adder16(cls,retenue=0):
+        """
+        Crée un half-adder de 16 bits en iniitalisant la retenue dans l'adder de 16 bits
+        param: retenue valeur de la retenue (0 par défaut)
+        return: le half adder
+        """
         adder = cls.cla_adder16()
         # on enlève la retenue entrante de l'adder
         inputs = adder.inputs_ids()
@@ -939,6 +999,12 @@ class bool_circ(open_digraph):
 
     @classmethod
     def cla_somme16(cls, entier1, entier2):
+        """
+        Utilise l'adder cla de 16 bits pour calculer la somme de deux entiers sur 16 bits
+        param: entier1
+        param: entier2
+        return: somme de entier1 et entier2
+        """
         registre1 = bool_circ.registre(entier1, n=16)
         registre2 = bool_circ.registre(entier2, n=16)
         registres= registre1.compo_parallele(registre2)

@@ -1,0 +1,11 @@
+Digraph G {
+24 [label="0",isInput=False,isOutput=False];
+30 [label="",isInput=False,isOutput=True];
+31 [label="",isInput=False,isOutput=True];
+32 [label="",isInput=False,isOutput=True];
+54 [label="0",isInput=False,isOutput=False];
+59 [label="1",isInput=False,isOutput=False];
+24 -> 31;
+54 -> 30;
+59 -> 32;
+}
