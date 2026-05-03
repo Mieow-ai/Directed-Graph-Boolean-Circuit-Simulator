@@ -600,6 +600,9 @@ class bool_circ(open_digraph):
                             self.add_edge(idN, id_enfant)
                             self.remove_edge(id, id_enfant)
                         self.add_edge(id, idN)
+                        if(id in self.outputs_ids) :
+                            self.outputs_ids.append(idN)
+                            self.outputs_ids.remove(id)
                         res = True
         return res
     
