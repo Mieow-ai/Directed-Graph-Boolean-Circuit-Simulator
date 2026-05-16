@@ -1,3 +1,4 @@
+from sys import _current_frames
 import typing_extensions
 from modules import open_digraph_mx
 from collections import abc
@@ -260,7 +261,8 @@ class bool_circ(open_digraph):
         s2 = ""
         for char in s:
             if char == '(':
-                current_node.set_label(current_node.get_label() + s2)
+                if s2 != "":
+                    current_node.set_label(s2)
                 nouveau_parent_id = b.add_node()
                 b.add_edge(nouveau_parent_id,current_node.get_id())
                 current_node = b.get_node_by_id(nouveau_parent_id)
@@ -313,7 +315,8 @@ class bool_circ(open_digraph):
             s2 = ""
             for char in s:
                 if char == '(':
-                    current_node.set_label(current_node.get_label() + s2)
+                    if s2 != "":
+                        current_node.set_label(s2)
                     nouveau_parent_id = b.add_node()
                     b.add_edge(nouveau_parent_id,current_node.get_id())
                     current_node = b.get_node_by_id(nouveau_parent_id)
@@ -691,46 +694,40 @@ class bool_circ(open_digraph):
                     else:
                         raise ValueError("Lors de l'évaluation du noeud, son parent doit avoir une valeur binaire")
                 elif node.get_label() == "&":
-                    if len(node.get_parents()) != 2:
-                       raise ValueError("Un noeud binaire doit avoir exactement deux parents")
-                    id_parent1= list(node.get_parents().keys())[0]
-                    id_parent2= list(node.get_parents().keys())[1]
-                    parent1 = circuit.get_node_by_id(id_parent1)
-                    parent2 = circuit.get_node_by_id(id_parent2)
-                    if parent1.get_label() not in ["0", "1"] or parent2.get_label() not in ["0", "1"]:
-                        raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
-                    if parent1.get_label() == "0" or parent2.get_label() == "0":
-                        node.set_label("0")
-                    #Sinon les deux sont à 1
-                    else:
-                        node.set_label("1")
+                    setfalse = False
+                    node.set_label("1")
+                    for idparent in node.get_parents().keys():
+                        parent = circuit.get_node_by_id(idparent)
+                        if parent.get_label() not in ["0", "1"]:
+                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                        if not(setfalse) and parent.get_label() == "0":
+                            node.set_label("0")
+                            setfalse = True
                 elif node.get_label() == "|":
-                    if len(node.get_parents()) != 2:
-                       raise ValueError("Un noeud binaire doit avoir exactement deux parents")
-                    id_parent1= list(node.get_parents().keys())[0]
-                    id_parent2= list(node.get_parents().keys())[1]
-                    parent1 = circuit.get_node_by_id(id_parent1)
-                    parent2 = circuit.get_node_by_id(id_parent2)
-                    if parent1.get_label() not in ["0", "1"] or parent2.get_label() not in ["0", "1"]:
-                        raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
-                    if parent1.get_label() == "1" or parent2.get_label() == "1":
-                        node.set_label("1")
-                    #Sinon les deux sont à 0
-                    else:
-                        node.set_label("0")
+                    # Changement de logique pour que les noeuds de base binaire peuvent avoir plusieurs parents
+                    node.set_label("0")
+                    settrue = False 
+                    for idparent in node.get_parents().keys():
+                        parent = circuit.get_node_by_id(idparent)
+                        if parent.get_label() not in ["0", "1"]:
+                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                        if not(settrue) and parent.get_label() == "1" :
+                            node.set_label("1")   
+                            settrue = True
+
                 elif node.get_label() == "^": #XOR
-                    if len(node.get_parents()) != 2:
-                       raise ValueError("Un noeud binaire doit avoir exactement deux parents")
-                    id_parent1= list(node.get_parents().keys())[0]
-                    id_parent2= list(node.get_parents().keys())[1]
-                    parent1 = circuit.get_node_by_id(id_parent1)
-                    parent2 = circuit.get_node_by_id(id_parent2)
-                    if parent1.get_label() not in ["0", "1"] or parent2.get_label() not in ["0", "1"]:
-                        raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
-                    if (parent1.get_label() == "0" and parent2.get_label() == "0") or (parent1.get_label() == "1" and parent2.get_label() == "1"):
+                    cpt = 0
+                    for idparent, multiplicity in node.get_parents().items():
+                        parent = circuit.get_node_by_id(idparent)
+                        label = parent.get_label()
+                        if label not in ["0", "1"]:
+                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                        if label == "1":
+                            cpt += multiplicity
+                    # Le XOR est vrai si un nombre impair de ses parents sont vrais (avec les multiplicités)
+                    if cpt % 2 == 0: 
                         node.set_label("0")
-                    #Sinon une des deux est à 1 et l'autre à 0
-                    else:
+                    else: 
                         node.set_label("1")
                 else:
                     raise ValueError("Label de noeud invalide lors de l'évaluation du circuit")
@@ -806,6 +803,18 @@ class bool_circ(open_digraph):
         self.add_edge(node2, op_node)
         return op_node
     
+    def op_multi(self, nodes, op):
+        """
+        Lie une liste de noeuds à un opérateur n-aire et retourne le noeud opérateur
+        param nodes: liste des ids des noeuds
+        param op: opérateur ("&", "|", "^")
+        return: le noeud opérateur
+        """
+        op_node = self.add_node(label=op)
+        for n in nodes:
+            self.add_edge(n, op_node)
+        return op_node
+    
     def cla_comp(self, Pi,Gi,c0):
             """
             param: Pi, liste des ids des noeuds représentant le bit de propagation de retenue de chaque addition bit à bit
@@ -819,45 +828,37 @@ class bool_circ(open_digraph):
             """
             Gi.reverse()
             Pi.reverse()
-            #C4
+            # Remplacement des opérateurs binaires par des opérateurs n-aires pour réduire la profondeur du circuit et mieux simuler le CLA
+
             # Un bloc cla de 4 bits propage une retenue si les 4 bits propagent
-            # Le bloc génère une retenue si le bit de poids fort génère une retenue ou si le second bit génère et le bit de poids fort propage etc
-            p3andp2 = self.opbin(Pi[3], Pi[2], "&")
-            p1andp0 = self.opbin(Pi[1], Pi[0], "&")
-            P_groupe = self.opbin(p3andp2, p1andp0, "&")
+            # P_groupe = P3 & P2 & P1 & P0
+            P_groupe = self.op_multi([Pi[3], Pi[2], Pi[1], Pi[0]], "&")
             
+            # Le bloc génère une retenue si le bit de poids fort génère une retenue ou si le second bit génère et le bit de po
+            # G_groupe = G3 | (P3&G2) | (P3&P2&G1) | (P3&P2&P1&G0)
+            p3_g2 = self.op_multi([Pi[3], Gi[2]], "&")
+            p3_p2_g1 = self.op_multi([Pi[3], Pi[2], Gi[1]], "&")
+            p3_p2_p1_g0 = self.op_multi([Pi[3], Pi[2], Pi[1], Gi[0]], "&")
+            G_groupe = self.op_multi([Gi[3], p3_g2, p3_p2_g1, p3_p2_p1_g0], "|")
 
-            p3andg2 = self.opbin(Pi[3], Gi[2], "&")  
-            g3orp3andg2 = self.opbin(Gi[3], p3andg2, "|")
-            
-            p3andp2andG1 = self.opbin(p3andp2, Gi[1], "&")
-            g3orp3andg2_or_p3andp2andG1 = self.opbin(g3orp3andg2, p3andp2andG1, "|")
-            
-            p3andp2andp1 = self.opbin(p3andp2, Pi[1], "&")
-            p3andp2andp1andG0 = self.opbin(p3andp2andp1, Gi[0], "&")
-            G_groupe = self.opbin(g3orp3andg2_or_p3andp2andG1, p3andp2andp1andG0, "|")
+            # C4 = G3 | (P3&G2) | (P3&P2&G1) | (P3&P2&P1&G0) | (P3&P2&P1&P0&C0)
+            p3_p2_p1_p0_c0 = self.op_multi([Pi[3], Pi[2], Pi[1], Pi[0], c0], "&")
+            c4 = self.op_multi([Gi[3], p3_g2, p3_p2_g1, p3_p2_p1_g0, p3_p2_p1_p0_c0], "|")
 
-            P_groupeandc0 = self.opbin(P_groupe, c0, "&")
-            c4 = self.opbin(G_groupe, P_groupeandc0, "|")
+            # C3 = G2 | (P2&G1) | (P2&P1&G0) | (P2&P1&P0&C0)
+            p2_g1 = self.op_multi([Pi[2], Gi[1]], "&")
+            p2_p1_g0 = self.op_multi([Pi[2], Pi[1], Gi[0]], "&")
+            p2_p1_p0_c0 = self.op_multi([Pi[2], Pi[1], Pi[0], c0], "&")
+            c3 = self.op_multi([Gi[2], p2_g1, p2_p1_g0, p2_p1_p0_c0], "|")
 
-            #C3
-            p0andc0 = self.opbin(Pi[0], c0, "&")
-            p2andp1 = self.opbin(Pi[2], Pi[1], "&")
-            p2andp1andp0andc0 = self.opbin(p2andp1, p0andc0, "&")
-            p2andp1andg0 = self.opbin(p2andp1, Gi[0], "&")
-            p2andg1 = self.opbin(Pi[2], Gi[1], "&")
-            g2orp2andg1 = self.opbin(Gi[2], p2andg1, "|")
-            g2orp2andg1_or_p2andp1andg0 = self.opbin(g2orp2andg1, p2andp1andg0, "|")
-            c3 = self.opbin(g2orp2andg1_or_p2andp1andg0, p2andp1andp0andc0, "|")
+            # C2 = G1 | (P1&G0) | (P1&P0&C0)
+            p1_g0 = self.op_multi([Pi[1], Gi[0]], "&")
+            p1_p0_c0 = self.op_multi([Pi[1], Pi[0], c0], "&")
+            c2 = self.op_multi([Gi[1], p1_g0, p1_p0_c0], "|")
 
-            #C2
-            p1andp0andc0 = self.opbin(p1andp0, c0, "&")
-            p1andg0 = self.opbin(Pi[1], Gi[0], "&")
-            g1orp1andg0 = self.opbin(Gi[1], p1andg0, "|")
-            c2 = self.opbin(g1orp1andg0, p1andp0andc0, "|")
-
-            #C1
-            c1 = self.opbin(Gi[0], p0andc0, "|")
+            # C1 = G0 | (P0&C0)
+            p0_c0 = self.op_multi([Pi[0], c0], "&")
+            c1 = self.op_multi([Gi[0], p0_c0], "|")
             
             retenues = [c3, c2, c1,c0]
             Gi.reverse()

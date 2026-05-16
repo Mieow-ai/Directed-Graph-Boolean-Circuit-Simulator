@@ -297,6 +297,15 @@ class InitTest(unittest.TestCase):
         self.assertEqual(prev2[4], 6)
         self.assertEqual(prev2[0], 3)
         self.assertEqual(prev2[2], 4)
+        dist3,prev3 = b.longueurs_bfs(7,direction=-1)
+        #b.save_as_pdf("exec_soutenance.pdf", verbose=True)
+        print("\nDistances depuis le noeud 3 vers les enfants")
+        print(dist)
+        print("\nDistances depuis le noeud 7 vers les parents")
+        print(dist3)
+        print("\nDistances depuis le noeud 7, direction None")
+        dist4,prev4 = b.longueurs_bfs(7,direction=None)
+        print(dist4)
 
     def test_shortest_path(self):
         g = open_digraph.empty()
@@ -545,7 +554,7 @@ class InitTest(unittest.TestCase):
 
     def test_cla_addern(self):
         cla = bool_circ.cla_adder(3)
-        #cla.save_as_pdf("test_cla_adder3.pdf")
+        #cla.save_as_pdf("test_cla_adder_2x4.pdf")
         somme = bool_circ.cla_somme(37,120)
         self.assertEqual(somme, 157)
         
@@ -582,11 +591,11 @@ class NodeTest(unittest.TestCase):
 
     def test_encodeur(self):
         encodeur = bool_circ.encodeur()
-        encodeur.save_as_pdf("test_encodeur.pdf")
+        #encodeur.save_as_pdf("test_encodeur.pdf")
     
     def test_decodeur(self):
         decodeur = bool_circ.decodeur()
-        decodeur.save_as_pdf("test_decodeur.pdf")
+        #decodeur.save_as_pdf("test_decodeur.pdf")
 
 
 if __name__ == '__main__': 
