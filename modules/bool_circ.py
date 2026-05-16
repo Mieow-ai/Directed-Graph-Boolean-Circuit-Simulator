@@ -279,8 +279,11 @@ class bool_circ(open_digraph):
         
         liste_ids = list(niveau1_id)
         for id1 in liste_ids:
+            # On continue si le noeud a déjà été fusionné et n'existe plus
+            if id1 not in niveau1_id: continue
             for id2 in liste_ids:
-                if id1 != id2 and id1 in niveau1_id and id2 in niveau1_id:
+                # Il faut que le deuxieme noeud n'est pas deja été fusionné également
+                if id1 != id2 and id2 in niveau1_id: 
                     if b.get_node_by_id(id1).get_label() == b.get_node_by_id(id2).get_label():
                         b.merge_nodes(id1, id2)
                         niveau1_id.remove(id2)
@@ -333,8 +336,11 @@ class bool_circ(open_digraph):
         
         liste_ids = list(niveau1_id)
         for id1 in liste_ids:
+            # On continue si le noeud a déjà été fusionné et n'existe plus
+            if id1 not in niveau1_id: continue
             for id2 in liste_ids:
-                if id1 != id2 and id1 in niveau1_id and id2 in niveau1_id:
+                # Il faut que le deuxieme noeud n'est pas deja été fusionné également
+                if id1 != id2 and id2 in niveau1_id: 
                     if b.get_node_by_id(id1).get_label() == b.get_node_by_id(id2).get_label():
                         b.merge_nodes(id1, id2)
                         niveau1_id.remove(id2)

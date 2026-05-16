@@ -280,6 +280,7 @@ class CompositionMixin:
         param id1: id du premier noeud
         param id2: id du second noeud
         return: graphe fusionné
+        raise: ValueError si les noeuds n'ont pas les mêmes labels
         """
         n1 = self.get_node_by_id(id1)
         n2 = self.get_node_by_id(id2)
@@ -294,13 +295,13 @@ class CompositionMixin:
                 self.add_edgeM(p_id, id1, multiplicite)
         for c_id, multiplicite in n2_enfants.items():
             if c_id == id2:
-                self.add_edgeM(id1, id1, multiplicite)
+               continue # Le cas a déjà été traité
             else:
                 self.add_edgeM(id1, c_id, multiplicite)
         if id2 in self.inputs and id1 not in self.inputs:
-            self.add_input_node(n1)
+            self.add_input_id(id1)
         if id2 in self.outputs and id1 not in self.outputs:
-            self.add_output_node(n2)
+            self.add_output_id(id1)
         self.remove_node_by_id(id2)
 
     def compo_parallele(self, other):

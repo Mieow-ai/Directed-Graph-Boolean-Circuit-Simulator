@@ -248,7 +248,7 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
         return new_id
     
     def add_input_node(self, id, label=''):
-        """ Ajoute une arête entre l'entrée et le noeud id """
+        """ Crée une entrée et ajoute une arête entre l'entrée et le noeud id """
         if id not in self.nodes.keys():
             raise ValueError(f"Le noeud {id} n'existe pas dans le graphe")
         if id in self.outputs:
@@ -258,7 +258,7 @@ class open_digraph(mx.MatrixMixin, mx.DisplayMixin, mx.CompositionMixin, mx.Algo
         self.add_edge(new_id, id)
         
     def add_output_node(self, id, label=''):
-        """ Ajoute une arête entre le noeud id et la sortie """
+        """ Crée une sortie et ajoute une arête entre le noeud id et la sortie """
         if id not in self.nodes.keys():
             raise ValueError(f"Le noeud {id} n'existe pas dans le graphe")
         if id in self.inputs:
