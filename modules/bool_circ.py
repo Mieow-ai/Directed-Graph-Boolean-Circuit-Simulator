@@ -1,3 +1,6 @@
+import typing_extensions
+from modules import open_digraph_mx
+from collections import abc
 import sys
 import os
 import random
@@ -1012,3 +1015,274 @@ class bool_circ(open_digraph):
         adder3 = bool_circ.cla_half_adder16()
         circuit = registres.compo_sequentielle(adder3)
         return circuit.evaluer()
+
+    @classmethod
+    def encodeur(cls):
+        b = cls.empty()
+        entrees = [b.add_node(label="") for _ in range(4)]
+        for e in entrees:
+            b.add_input_id(e)
+        e0, e1, e2, e3 = entrees
+        xor0 = b.add_node(label="^")
+        xor1 = b.add_node(label="^")
+        xor2 = b.add_node(label="^")
+        b.add_edge(e0, xor0)
+        b.add_edge(e1, xor0)
+        b.add_edge(e3, xor0)
+        b.add_edge(e3, xor1)
+        b.add_edge(e0, xor1)
+        b.add_edge(e2, xor1)
+        b.add_edge(e1, xor2)
+        b.add_edge(e2, xor2)
+        b.add_edge(e3, xor2)
+        sorties = [b.add_node(label="")for _ in range(7)]
+        b.add_edge(xor0, sorties[0])
+        b.add_edge(xor1, sorties[1])
+        b.add_edge(e0, sorties[2])
+        b.add_edge(xor2, sorties[3])
+        b.add_edge(e1, sorties[4])
+        b.add_edge(e2, sorties[5])
+        b.add_edge(e3, sorties[6])
+        for s in sorties:
+            b.add_output_id(s)
+        return b
+    
+    @classmethod
+    def decodeur(cls):
+        b = cls.empty()
+        entrees = [b.add_node(label="") for _ in range(7)]
+        for e in entrees:
+            b.add_input_id(e)
+        xor0 = b.add_node(label="^")
+        xor1 = b.add_node(label="^")
+        xor2 = b.add_node(label="^")
+
+        b.add_edge(entrees[0], xor0)
+        b.add_edge(entrees[2], xor0)
+        b.add_edge(entrees[4], xor0)
+        b.add_edge(entrees[6], xor0)
+
+        b.add_edge(entrees[1], xor1)
+        b.add_edge(entrees[2], xor1)
+        b.add_edge(entrees[5], xor1)
+        b.add_edge(entrees[6], xor1)
+
+        b.add_edge(entrees[3], xor2)
+        b.add_edge(entrees[4], xor2)
+        b.add_edge(entrees[5], xor2)
+        b.add_edge(entrees[6], xor2)
+
+        not0 = b.add_node(label="~")
+        b.add_edge(xor0, not0)
+        not1 = b.add_node(label="~")
+        b.add_edge(xor1, not1)
+        not2 = b.add_node(label="~")
+        b.add_edge(xor2, not2)
+
+        and0 = b.add_node(label="&")
+        b.add_edge(xor0, and0)
+        b.add_edge(xor1, and0)
+        b.add_edge(not2, and0)
+
+        and1 = b.add_node(label="&")
+        b.add_edge(not0, and1)
+        b.add_edge(xor1, and1)
+        b.add_edge(xor2, and1)
+
+        and2 = b.add_node(label="&")
+        b.add_edge(xor0, and2)
+        b.add_edge(not1, and2)
+        b.add_edge(xor2, and2)
+
+        and3 = b.add_node(label="&")
+        b.add_edge(xor0, and3)
+        b.add_edge(xor1, and3)
+        b.add_edge(xor2, and3)
+
+        xors0 = b.add_node(label="^")
+        b.add_edge(and0, xors0)
+        b.add_edge(entrees[2], xors0)
+        xors1 = b.add_node(label="^")
+        b.add_edge(and2, xors1)
+        b.add_edge(entrees[4], xors1)
+        xors2 = b.add_node(label="^")
+        b.add_edge(and1, xors2)
+        b.add_edge(entrees[5], xors2)
+        xors3 = b.add_node(label="^")
+        b.add_edge(and3, xors3)
+        b.add_edge(entrees[6], xors3)
+
+        sorties = [b.add_node(label="") for _ in range(4)]
+        b.add_edge(xors0, sorties[0])
+        b.add_edge(xors1, sorties[1])
+        b.add_edge(xors2, sorties[2])
+        b.add_edge(xors3, sorties[3])
+        for s in sorties:
+            b.add_output_id(s)
+        return b
+
+    def simplifier_xor_associativite(self):
+        res = False
+        for id_noeud, noeud in list(self.get_id_node_map().items()):
+            if id_noeud not in self.get_id_node_map():
+                continue
+            if noeud.get_label() == "^":
+                for p_id in list(noeud.get_parents().keys()):
+                    parent = self.get_node_by_id(p_id)
+                    if parent.get_label() == "^":
+                        for gp_id, multiplicity in parent.get_parents().items():
+                            for _ in range(multiplicity):
+                                self.add_edge(gp_id, id_noeud)
+                        multiplicity_parent = noeud.get_parents()[p_id]
+                        for _ in range(multiplicity_parent):
+                            self.remove_edge(p_id, id_noeud)
+                        res = True
+                        break
+        self.nettoyer_noeuds_morts()
+        return res
+    
+    def simplifier_copie_associativite(self):
+        res = False
+        for id_noeud, noeud in list(self.get_id_node_map().items()):
+            if id_noeud not in self.get_id_node_map():
+                continue
+            if noeud.get_label() == "" and noeud.indegree() == 1:
+                p_id = list(noeud.get_parents().keys())[0]
+                parent = self.get_node_by_id(p_id)
+                if parent.get_label() == "" and parent.indegree() == 1:
+                    gp_id = list(parent.get_parents().keys())[0]
+                    self.add_edge(gp_id, id_noeud)
+                    self.remove_edge(p_id, id_noeud)
+                    res = True
+        self.nettoyer_noeuds_morts()
+        return res
+
+    def simplifier_xor_involution(self):
+        res = False
+        for id_noeud, noeud in list(self.get_id_node_map().items()):
+            if id_noeud not in self.get_id_node_map():
+                continue
+            if noeud.get_label() == "^":
+                for parent_id, multiplicity in list(noeud.get_parents().items()):
+                    if multiplicity >= 2:
+                        paires = multiplicity // 2
+                        for _ in range(paires * 2):
+                            self.remove_edge(parent_id, id_noeud)
+                        res = True
+        self.nettoyer_noeuds_morts()
+        return res 
+
+    def simplifier_non_travers_xor(self):
+        res = False
+        for id_noeud, noeud in list(self.get_id_node_map().items()):
+            if id_noeud not in self.get_id_node_map():
+                continue
+            if noeud.get_label() == "^":
+                for p_id in list(noeud.get_parents().items()):
+                    parent = self.get_node_by_id(p_id[0])
+                    if parent.get_label() == "~":
+                        grands_parents = list(parent.get_parents().keys())
+                        if len(grands_parents) == 1:
+                            gp_id = grands_parents[0]
+                            self.add_edge(gp_id, id_noeud)
+                            self.remove_edge(p_id[0], id_noeud)
+
+                            enfants_xor = list(noeud.get_children().keys())
+                            n_non = self.add_node(label="~")
+                            self.add_edge(id_noeud, n_non)
+                            for enfant_id in enfants_xor:
+                                self.add_edge(n_non, enfant_id)
+                                self.remove_edge(id_noeud, enfant_id)
+                            if id_noeud in self.outputs_ids():
+                                self.add_output_id(n_non)
+                                self.remove_output_id(id_noeud)
+                            res = True
+                            break
+        self.nettoyer_noeuds_morts()
+        return res
+
+    def simplifier_non_travers_copie(self):
+        res = False
+        for id_noeud, noeud in list(self.get_id_node_map().items()):
+            if id_noeud not in self.get_id_node_map():
+                continue
+            if noeud.get_label() == "" and noeud.indegree() == 1:
+                p_id = list(noeud.get_parents().keys())[0]
+                parent = self.get_node_by_id(p_id)
+                if parent.get_label() == "~":
+                    grands_parents = list(parent.get_parents().keys())
+                    if len(grands_parents) == 1:
+                        gp_id = grands_parents[0]
+                        self.add_edge(gp_id, id_noeud)
+                        self.remove_edge(p_id, id_noeud)
+                    
+                    enfants_copie = list(noeud.get_children().keys())
+                    for enfant_id in enfants_copie:
+                        n_non = self.add_node(label="~")
+                        self.add_edge(id_noeud, n_non)
+                        self.add_edge(n_non, enfant_id)
+                        self.remove_edge(id_noeud, enfant_id)
+                    
+                    if id_noeud in self.outputs_ids():
+                        n_non_output = self.add_node(label="~")
+                        self.add_edge(id_noeud, n_non_output)
+                        self.add_output_id(n_non_output)
+                        self.remove_output_id(id_noeud)
+
+                    res = True
+        self.nettoyer_noeuds_morts()
+        return res
+    
+    def simplifier_non_involution(self):
+        res = False
+        for id_noeud, noeud in list(self.get_node_map().items()):
+            if id_noeud not in self.get_id_node_map():
+                continue
+            if noeud.get_label() == "~" and noeud.indegree() == 1:
+                p_id = list(noeud.get_parents().keys())[0]
+                parent = self.get_node_by_id(p_id)
+                if parent.get_label() == "~" and parent.indegree() == 1:
+                    gp_id = list(parent.get_parents().keys())[0]
+                    for enfant_id in list(noeud.get_children().keys()):
+                        self.add_edge(gp_id, enfant_id)
+                        self.remove_edge(id_noeud, enfant_id)
+                    if id_noeud in self.outputs_ids():
+                        self.add_output_id(gp_id)
+                        self.remove_output_id(id_noeud)
+                    
+                    self.remove_edge(p_id, id_noeud)
+                    res = True
+        
+        self.nettoyer_noeuds_morts()
+        return res
+
+    def simplifier_complet(self):
+        flag = True
+        while flag:
+            flag = (
+                self.simplifier_copie() or
+                self.simplifier_non() or
+                self.simplifier_et() or
+                self.simplifier_ou() or
+                self.simplifier_ou_exclusif() or
+                self.simplifier_neutre() or
+                self.simplifier_xor_involution() or
+                self.simplifier_non_travers_xor() or
+                self.simplifier_xor_associativite() or
+                self.simplifier_copie_associativite() or
+                self.simplifier_non_travers_copie() or
+                self.simplifier_non_involution()
+            )
+        self.nettoyer_noeuds_morts()
+
+
+
+    
+                        
+
+        
+        
+
+
+            
+

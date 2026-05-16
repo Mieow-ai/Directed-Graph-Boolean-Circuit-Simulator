@@ -580,6 +580,14 @@ class NodeTest(unittest.TestCase):
         self.assertEqual(self.n0.outdegree(), 2)
         self.assertEqual(self.n0.degree(), 3)
 
+    def test_encodeur(self):
+        encodeur = bool_circ.encodeur()
+        encodeur.save_as_pdf("test_encodeur.pdf")
+    
+    def test_decodeur(self):
+        decodeur = bool_circ.decodeur()
+        decodeur.save_as_pdf("test_decodeur.pdf")
+
 
 if __name__ == '__main__': 
     unittest.main()
