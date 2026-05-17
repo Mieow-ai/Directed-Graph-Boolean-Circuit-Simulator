@@ -599,6 +599,183 @@ class NodeTest(unittest.TestCase):
         decodeur = bool_circ.decodeur()
         #decodeur.save_as_pdf("test_decodeur.pdf")
 
+    def test_point_2(self):
+        print("\n" + "="*50)
+        print("POINT 2 : Évaluation d'un half-adder sur 1 bit")
+        print("="*50)
+        registre1 = bool_circ.registre(1, n=1)
+        registre2 = bool_circ.registre(1, n=1)
+        registres = registre1.compo_parallele(registre2)
+        half_adder = bool_circ.half_adder(0)
+        circuit_complet = registres.compo_sequentielle(half_adder)
+        print(f"Entrées du circuit : {circuit_complet.inputs_ids()}")
+        print(f"Sorties du circuit : {circuit_complet.outputs_ids()}")
+        tri_topo = circuit_complet.tri_topologique()
+        print("\nÉtapes intermédiares :")
+        for i, niveau in enumerate(tri_topo):
+            labels = []
+            for noeud_id in niveau:
+                noeud = circuit_complet.get_node_by_id(noeud_id)
+                label = noeud.get_label() if noeud.get_label() != "" else "copie/sortie"
+                labels.append(f"ID : {noeud_id} | label : {label}")
+            print(f"niveau {i} : {', '.join(labels)}")
+        resultat = circuit_complet.evaluer()
+        print(f"\n Résultat final de l'évaluation (1 + 1) : {resultat}")
+        circuit_complet.save_as_pdf("point2_evaluation_trace.pdf", verbose=True)
+
+    def test_point_3(self):
+        print("\n" + "="*50)
+        print("POINT 3 : Complexité du Half-Adder classique")
+        print("="*50)
+        
+        print(f"{'n (taille = 2^n)':<20} | {'Profondeur':<12} | {'Nb Noeuds/Portes':<18} | {'Plus court chemin'}")
+        print("-" * 75)
+
+        for n in range(5):
+            half_adder = bool_circ.half_adder(n)
+            pr = half_adder.profondeur()
+            nb_noeuds =len(half_adder.get_nodes())
+
+            min_path = float('inf')
+            for in_id in half_adder.inputs_ids():
+                for out_id in half_adder.outputs_ids():
+                    dist, path = half_adder.shortest_path(in_id, out_id)
+                    if dist is not None and dist < min_path:
+                        min_path = dist
+            print(f"n={n} ({2**n} bits){'':<8} | {pr:<12} | {nb_noeuds:<18} | {min_path}")
+        
+        print("\n" + "-"*75)
+        print("Bonus CLA :")
+        print(f"{'n (taille = 2^n)':<25} | {'Profondeur':<12} | {'Nombre de noeuds/Portes':<18} | {'Plus court chemin'}")
+        print("-"*75)
+
+        for n in range(2, 4):
+            cla = bool_circ.cla_half_adder(n)
+            pr = cla.profondeur()
+            nb_noeuds = len(cla.get_nodes())
+            min_path = float('inf')
+            for in_id in cla.inputs_ids():
+                for out_id in cla.outputs_ids():
+                    dist, path = cla.shortest_path(in_id, out_id)
+                    if dist is not None and dist < min_path:
+                        min_path = dist       
+            print(f"n={n} ({2**n} bits) CLA {'':<8} | {pr:<12} | {nb_noeuds:<23} | {min_path}")
+
+    def test_point_4(self):
+        print("\n" + "="*50)
+        print("POINT 4 : Étapes de simplification (comme sur le diagramme)")
+        print("="*50)
+
+        print(f"\n--- Test: Associativité de XOR ---")
+        g1 = open_digraph.empty()
+        e1_1, e1_2, e1_3 = g1.add_node(label=""), g1.add_node(label=""), g1.add_node(label="")
+        xor_p, xor_e = g1.add_node(label="^"), g1.add_node(label="^")
+        s1 = g1.add_node(label="")
+        for i in [e1_1, e1_2, e1_3]: g1.add_input_id(i)
+        g1.add_output_id(s1)
+        g1.add_edge(e1_1, xor_p); g1.add_edge(e1_2, xor_p)
+        g1.add_edge(e1_3, xor_e); g1.add_edge(xor_p, xor_e)
+        g1.add_edge(xor_e, s1)
+        c1 = bool_circ(g1)
+        c1.save_as_pdf("img1_associativite_xor_AVANT.pdf", verbose=False)
+        c1.simplifier_xor_associativite()
+        c1.save_as_pdf("img1_associativite_xor_APRES.pdf", verbose=False)
+
+        print(f"\n--- Test: Associativité de la copie ---")
+        g2 = open_digraph.empty()
+        e2 = g2.add_node(label="")
+        copie_p, copie_e = g2.add_node(label=""), g2.add_node(label="")
+        s2_1, s2_2, s2_3 = g2.add_node(label=""), g2.add_node(label=""), g2.add_node(label="")
+        g2.add_input_id(e2)
+        for o in [s2_1, s2_2, s2_3]: g2.add_output_id(o)
+        g2.add_edge(e2, copie_p)
+        g2.add_edge(copie_p, copie_e)
+        g2.add_edge(copie_p, s2_1)
+        g2.add_edge(copie_e, s2_2)
+        g2.add_edge(copie_e, s2_3)
+        c2 = bool_circ(g2)
+        c2.save_as_pdf("img2_associativite_copie_AVANT.pdf", verbose=False)
+        c2.simplifier_copie_associativite()
+        c2.save_as_pdf("img2_associativite_copie_APRES.pdf", verbose=False)
+
+        print(f"\n--- Test: Involution de XOR ---")
+        g3 = open_digraph.empty()
+        e3_1, e3_2 = g3.add_node(label=""), g3.add_node(label="")
+        xor3 = g3.add_node(label="^")
+        s3_xor, s3_other = g3.add_node(label=""), g3.add_node(label="")
+        g3.add_input_id(e3_1); g3.add_input_id(e3_2)
+        g3.add_output_id(s3_xor); g3.add_output_id(s3_other)
+        g3.add_edge(e3_1, xor3); g3.add_edge(e3_1, xor3)
+        g3.add_edge(e3_1, s3_other) 
+        g3.add_edge(e3_2, xor3)
+        g3.add_edge(xor3, s3_xor)
+        c3 = bool_circ(g3)
+        c3.save_as_pdf("img3_involution_xor_AVANT.pdf", verbose=False)
+        c3.simplifier_xor_involution()
+        c3.save_as_pdf("img3_involution_xor_APRES.pdf", verbose=False)
+
+        print(f"\n--- Test: Effacement (nettoyer_noeuds_morts) ---")
+        g4 = open_digraph.empty()
+        e4 = g4.add_node(label="")
+        op4 = g4.add_node(label="op")
+        g4.add_input_id(e4)
+        g4.add_edge(e4, op4)
+        c4 = bool_circ(g4)
+        c4.save_as_pdf("img4_effacement_AVANT.pdf", verbose=False)
+        c4.nettoyer_noeuds_morts()
+        c4.save_as_pdf("img4_effacement_APRES.pdf", verbose=False)
+
+        print(f"\n--- Test: NON à travers XOR ---")
+        g5 = open_digraph.empty()
+        e5_1, e5_2 = g5.add_node(label=""), g5.add_node(label="")
+        not5 = g5.add_node(label="~")
+        xor5 = g5.add_node(label="^")
+        s5 = g5.add_node(label="")
+        g5.add_input_id(e5_1); g5.add_input_id(e5_2)
+        g5.add_output_id(s5)
+        g5.add_edge(e5_1, not5)
+        g5.add_edge(not5, xor5)
+        g5.add_edge(e5_2, xor5)
+        g5.add_edge(xor5, s5)
+        c5 = bool_circ(g5)
+        c5.save_as_pdf("img5_non_travers_xor_AVANT.pdf", verbose=False)
+        c5.simplifier_non_travers_xor()
+        c5.save_as_pdf("img5_non_travers_xor_APRES.pdf", verbose=False)
+
+        print(f"\n--- Test: NON à travers la copie ---")
+        g6 = open_digraph.empty()
+        e6 = g6.add_node(label="")
+        not6 = g6.add_node(label="~")
+        copie6 = g6.add_node(label="")
+        s6_1, s6_2 = g6.add_node(label=""), g6.add_node(label="")
+        g6.add_input_id(e6)
+        g6.add_output_id(s6_1); g6.add_output_id(s6_2)
+        g6.add_edge(e6, not6)
+        g6.add_edge(not6, copie6)
+        g6.add_edge(copie6, s6_1)
+        g6.add_edge(copie6, s6_2)
+        c6 = bool_circ(g6)
+        c6.save_as_pdf("img6_non_travers_copie_AVANT.pdf", verbose=False)
+        c6.simplifier_non_travers_copie()
+        c6.save_as_pdf("img6_non_travers_copie_APRES.pdf", verbose=False)
+
+        print(f"\n--- Test: Involution de NON ---")
+        g7 = open_digraph.empty()
+        e7 = g7.add_node(label="")
+        not7_1, not7_2 = g7.add_node(label="~"), g7.add_node(label="~")
+        s7 = g7.add_node(label="")
+        g7.add_input_id(e7)
+        g7.add_output_id(s7)
+        g7.add_edge(e7, not7_1)
+        g7.add_edge(not7_1, not7_2)
+        g7.add_edge(not7_2, s7)
+        c7 = bool_circ(g7)
+        c7.save_as_pdf("img7_involution_non_AVANT.pdf", verbose=False)
+        c7.simplifier_non_involution()
+        c7.save_as_pdf("img7_involution_non_APRES.pdf", verbose=False)
+
+        print("\nTous les tests de schémas sont terminés et les PDF sont générés !")
+
 
 if __name__ == '__main__': 
     unittest.main()

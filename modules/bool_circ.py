@@ -1,3 +1,8 @@
+import typing_extensions
+from modules import open_digraph_mx
+from collections import abc
+import sys
+import os
 import random
 from modules.open_digraph import open_digraph
 
@@ -64,6 +69,8 @@ class bool_circ(open_digraph):
             raise ValueError("Le graphe n'est pas acyclique, impossible")
         else:
             b = g.copy()
+        if g.get_node_ids() == [] and (nbInput is not None or nbOutput is not None):
+            b = cls.identity(1)
 
         def labelNoeudBinaire():
             """
@@ -119,7 +126,7 @@ class bool_circ(open_digraph):
                 if id_noeud in b.inputs_ids():
                     b.remove_input_id(id_noeud)
                 b.add_edge(id_entree, id_noeud) # le noeud devient un noeud de copie et un noeud d'entrée est créé
-                b.get_node_by_id(id_noeud).set_label("") # On met le label vide sur le noeud (car il devient une copie)
+        
             # Plusieurs parents -> opérateur logique
             elif noeud.indegree() > 1:
                 b.get_node_by_id(id_noeud).set_label(labelNoeudBinaire())
@@ -149,9 +156,6 @@ class bool_circ(open_digraph):
                 raise ValueError(f"Le noeud {id_noeud} n'a pas exactement un parent ({len(parents)} parents)")
             return list(parents.keys())[0]
         
-        if len(b.get_node_ids()) == 0 and (nbInput is not None or nbOutput is not None):
-            b = cls.identity(1)
-
         if nbOutput is not None:
             if nbOutput <1:
                 raise ValueError("Le nombre de sorties doit être supérieur ou égal à 1")
@@ -182,23 +186,16 @@ class bool_circ(open_digraph):
                     b.add_output_id(id_sortie2)
                     b.add_edge(id_noeud, id_sortie1)
                     b.add_edge(id_noeud, id_sortie2)
+
                 else :
                     id_sortie = b.add_node()
                     b.add_output_id(id_sortie)
-                    noeud = b.get_node_by_id(id_noeud)
-                    # Si jamais le noeud choisi est un noeud d'operation alors il doit n'avoir qu'une sortie.
-                    if noeud.get_label() in ["~", "&", "|", "^"]:
-                        # On regarde si son unique enfant est déjà un noeud de copie
-                        enfant_id = list(noeud.get_children().keys())[0]
-                        enfant = b.get_node_by_id(enfant_id)
-                        if enfant.get_label() == "" and enfant_id not in b.outputs_ids():
-                            # C'est une copie, on se branche directement dessus
-                            b.add_edge(enfant_id, id_sortie)
-                        else:
-                            # Ce n'est pas une copie, on ajoute la sortie et on crée le noeud de copie
-                            b.add_edge(id_noeud, id_sortie)
-                            ajout_copie_outdegree(id_noeud, noeud)
-                    # Sinon c'est un noeud de copie, on peut directement le relier à la sortie
+                    noeud=b.get_node_by_id(id_noeud)
+                    # Si jamais le noeud choisi est un noeud d'operation alors il est nécessaire de d'ajouter un noeud de copie
+                    if noeud.get_label() == "~" or noeud.get_label() == "&" or noeud.get_label() == "|":
+                        b.add_edge(id_noeud, id_sortie) # l'arête sera déplacées sur le noeud de copie dans l'appel suivant
+                        ajout_copie_outdegree(id_noeud, noeud)
+                    #Sinon c'est un noeud de copie, on peut directement le relier à la sortie
                     else:
                         b.add_edge(id_noeud, id_sortie)
         if nbInput is not None:
@@ -207,20 +204,16 @@ class bool_circ(open_digraph):
             # Si il y a plus d'inputs que ce qui est voulu alors on fusionne des entrées
             while len(b.inputs_ids()) > nbInput:
                 id1, id2 = random.sample(b.inputs_ids(), 2)
-                
-                # On les retire des entrées
-                b.remove_input_id(id1)
-                b.remove_input_id(id2)
-                
-                # On crée le nouveau noeud de copie
-                id_copie = b.add_node()
-                b.add_edge(id_copie, id1)
-                b.add_edge(id_copie, id2)
-                
-                # On crée la nouvelle entrée unique
-                id_entree = b.add_node()
-                b.add_input_id(id_entree)
-                b.add_edge(id_entree, id_copie)
+                b.get_node_by_id(id1).set_label("") # On enlève le label des noeuds d'entrée pour la fusion
+                b.get_node_by_id(id2).set_label("")
+                b.merge_nodes(id1, id2)
+                if(len(b.get_node_by_id(id1).get_children().keys()) != 2):
+                    raise ValueError(f"Erreur de fusion des noeuds d'entrée, le noeud fusionné n'a pas exactement 2 enfants ({len(b.get_node_by_id(id1).get_children().keys())})")
+                enfant1 = list(b.get_node_by_id(id1).get_children().keys())[0]
+                enfant2 = list(b.get_node_by_id(id1).get_children().keys())[1]
+                # On fusionne les noeuds de copie pour que l'entrée n'ait qu'un seul enfant
+                b.merge_nodes(enfant1, enfant2)
+                b.remove_edge(id1, enfant1) #La fusion double les arêtes, on en retire une
 
             while len(b.inputs_ids()) < nbInput:
                 # On dédouble une entrée
@@ -230,9 +223,11 @@ class bool_circ(open_digraph):
                 entree2 = b.add_node()
                 b.add_input_id(entree2)
                 b.remove_input_id(id_noeud)
-                b.add_edge(entree1, id_noeud)
-                b.add_edge(entree2, id_noeud)
-                b.get_node_by_id(id_noeud).set_label(labelNoeudBinaire())
+                op = b.add_node(label=labelNoeudBinaire())
+                b.add_edge(entree1, op)
+                b.add_edge(entree2, op)
+                b.add_edge(op, id_noeud)
+                
         
         # Enfin on retire les noeuds de copie inutiles
         for id_noeud in b.copy().get_node_ids():
@@ -265,8 +260,7 @@ class bool_circ(open_digraph):
         s2 = ""
         for char in s:
             if char == '(':
-                if s2 != "":
-                    current_node.set_label(s2)
+                current_node.set_label(current_node.get_label() + s2)
                 nouveau_parent_id = b.add_node()
                 b.add_edge(nouveau_parent_id,current_node.get_id())
                 current_node = b.get_node_by_id(nouveau_parent_id)
@@ -283,11 +277,8 @@ class bool_circ(open_digraph):
         
         liste_ids = list(niveau1_id)
         for id1 in liste_ids:
-            # On continue si le noeud a déjà été fusionné et n'existe plus
-            if id1 not in niveau1_id: continue
             for id2 in liste_ids:
-                # Il faut que le deuxieme noeud n'est pas deja été fusionné également
-                if id1 != id2 and id2 in niveau1_id: 
+                if id1 != id2 and id1 in niveau1_id and id2 in niveau1_id:
                     if b.get_node_by_id(id1).get_label() == b.get_node_by_id(id2).get_label():
                         b.merge_nodes(id1, id2)
                         niveau1_id.remove(id2)
@@ -322,8 +313,7 @@ class bool_circ(open_digraph):
             s2 = ""
             for char in s:
                 if char == '(':
-                    if s2 != "":
-                        current_node.set_label(s2)
+                    current_node.set_label(current_node.get_label() + s2)
                     nouveau_parent_id = b.add_node()
                     b.add_edge(nouveau_parent_id,current_node.get_id())
                     current_node = b.get_node_by_id(nouveau_parent_id)
@@ -340,11 +330,8 @@ class bool_circ(open_digraph):
         
         liste_ids = list(niveau1_id)
         for id1 in liste_ids:
-            # On continue si le noeud a déjà été fusionné et n'existe plus
-            if id1 not in niveau1_id: continue
             for id2 in liste_ids:
-                # Il faut que le deuxieme noeud n'est pas deja été fusionné également
-                if id1 != id2 and id2 in niveau1_id: 
+                if id1 != id2 and id1 in niveau1_id and id2 in niveau1_id:
                     if b.get_node_by_id(id1).get_label() == b.get_node_by_id(id2).get_label():
                         b.merge_nodes(id1, id2)
                         niveau1_id.remove(id2)
@@ -649,6 +636,7 @@ class bool_circ(open_digraph):
                     self.remove_node_by_id(id)
                     flag = True # On relance car sa suppression a peut-être créé un nouveau nœud mort au-dessus
 
+
     def simplifier_naif(self):
         """
         Simplifie le circuit de manière naïve
@@ -704,40 +692,46 @@ class bool_circ(open_digraph):
                     else:
                         raise ValueError("Lors de l'évaluation du noeud, son parent doit avoir une valeur binaire")
                 elif node.get_label() == "&":
-                    setfalse = False
-                    node.set_label("1")
-                    for idparent in node.get_parents().keys():
-                        parent = circuit.get_node_by_id(idparent)
-                        if parent.get_label() not in ["0", "1"]:
-                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
-                        if not(setfalse) and parent.get_label() == "0":
-                            node.set_label("0")
-                            setfalse = True
-                elif node.get_label() == "|":
-                    # Changement de logique pour que les noeuds de base binaire peuvent avoir plusieurs parents
-                    node.set_label("0")
-                    settrue = False 
-                    for idparent in node.get_parents().keys():
-                        parent = circuit.get_node_by_id(idparent)
-                        if parent.get_label() not in ["0", "1"]:
-                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
-                        if not(settrue) and parent.get_label() == "1" :
-                            node.set_label("1")   
-                            settrue = True
-
-                elif node.get_label() == "^": #XOR
-                    cpt = 0
-                    for idparent, multiplicity in node.get_parents().items():
-                        parent = circuit.get_node_by_id(idparent)
-                        label = parent.get_label()
-                        if label not in ["0", "1"]:
-                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
-                        if label == "1":
-                            cpt += multiplicity
-                    # Le XOR est vrai si un nombre impair de ses parents sont vrais (avec les multiplicités)
-                    if cpt % 2 == 0: 
+                    if len(node.get_parents()) != 2:
+                       raise ValueError("Un noeud binaire doit avoir exactement deux parents")
+                    id_parent1= list(node.get_parents().keys())[0]
+                    id_parent2= list(node.get_parents().keys())[1]
+                    parent1 = circuit.get_node_by_id(id_parent1)
+                    parent2 = circuit.get_node_by_id(id_parent2)
+                    if parent1.get_label() not in ["0", "1"] or parent2.get_label() not in ["0", "1"]:
+                        raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                    if parent1.get_label() == "0" or parent2.get_label() == "0":
                         node.set_label("0")
-                    else: 
+                    #Sinon les deux sont à 1
+                    else:
+                        node.set_label("1")
+                elif node.get_label() == "|":
+                    if len(node.get_parents()) != 2:
+                       raise ValueError("Un noeud binaire doit avoir exactement deux parents")
+                    id_parent1= list(node.get_parents().keys())[0]
+                    id_parent2= list(node.get_parents().keys())[1]
+                    parent1 = circuit.get_node_by_id(id_parent1)
+                    parent2 = circuit.get_node_by_id(id_parent2)
+                    if parent1.get_label() not in ["0", "1"] or parent2.get_label() not in ["0", "1"]:
+                        raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                    if parent1.get_label() == "1" or parent2.get_label() == "1":
+                        node.set_label("1")
+                    #Sinon les deux sont à 0
+                    else:
+                        node.set_label("0")
+                elif node.get_label() == "^": #XOR
+                    if len(node.get_parents()) != 2:
+                       raise ValueError("Un noeud binaire doit avoir exactement deux parents")
+                    id_parent1= list(node.get_parents().keys())[0]
+                    id_parent2= list(node.get_parents().keys())[1]
+                    parent1 = circuit.get_node_by_id(id_parent1)
+                    parent2 = circuit.get_node_by_id(id_parent2)
+                    if parent1.get_label() not in ["0", "1"] or parent2.get_label() not in ["0", "1"]:
+                        raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                    if (parent1.get_label() == "0" and parent2.get_label() == "0") or (parent1.get_label() == "1" and parent2.get_label() == "1"):
+                        node.set_label("0")
+                    #Sinon une des deux est à 1 et l'autre à 0
+                    else:
                         node.set_label("1")
                 else:
                     raise ValueError("Label de noeud invalide lors de l'évaluation du circuit")
@@ -813,18 +807,6 @@ class bool_circ(open_digraph):
         self.add_edge(node2, op_node)
         return op_node
     
-    def op_multi(self, nodes, op):
-        """
-        Lie une liste de noeuds à un opérateur n-aire et retourne le noeud opérateur
-        param nodes: liste des ids des noeuds
-        param op: opérateur ("&", "|", "^")
-        return: le noeud opérateur
-        """
-        op_node = self.add_node(label=op)
-        for n in nodes:
-            self.add_edge(n, op_node)
-        return op_node
-    
     def cla_comp(self, Pi,Gi,c0):
             """
             param: Pi, liste des ids des noeuds représentant le bit de propagation de retenue de chaque addition bit à bit
@@ -838,37 +820,45 @@ class bool_circ(open_digraph):
             """
             Gi.reverse()
             Pi.reverse()
-            # Remplacement des opérateurs binaires par des opérateurs n-aires pour réduire la profondeur du circuit et mieux simuler le CLA
-
+            #C4
             # Un bloc cla de 4 bits propage une retenue si les 4 bits propagent
-            # P_groupe = P3 & P2 & P1 & P0
-            P_groupe = self.op_multi([Pi[3], Pi[2], Pi[1], Pi[0]], "&")
+            # Le bloc génère une retenue si le bit de poids fort génère une retenue ou si le second bit génère et le bit de poids fort propage etc
+            p3andp2 = self.opbin(Pi[3], Pi[2], "&")
+            p1andp0 = self.opbin(Pi[1], Pi[0], "&")
+            P_groupe = self.opbin(p3andp2, p1andp0, "&")
             
-            # Le bloc génère une retenue si le bit de poids fort génère une retenue ou si le second bit génère et le bit de po
-            # G_groupe = G3 | (P3&G2) | (P3&P2&G1) | (P3&P2&P1&G0)
-            p3_g2 = self.op_multi([Pi[3], Gi[2]], "&")
-            p3_p2_g1 = self.op_multi([Pi[3], Pi[2], Gi[1]], "&")
-            p3_p2_p1_g0 = self.op_multi([Pi[3], Pi[2], Pi[1], Gi[0]], "&")
-            G_groupe = self.op_multi([Gi[3], p3_g2, p3_p2_g1, p3_p2_p1_g0], "|")
 
-            # C4 = G3 | (P3&G2) | (P3&P2&G1) | (P3&P2&P1&G0) | (P3&P2&P1&P0&C0)
-            p3_p2_p1_p0_c0 = self.op_multi([Pi[3], Pi[2], Pi[1], Pi[0], c0], "&")
-            c4 = self.op_multi([Gi[3], p3_g2, p3_p2_g1, p3_p2_p1_g0, p3_p2_p1_p0_c0], "|")
+            p3andg2 = self.opbin(Pi[3], Gi[2], "&")  
+            g3orp3andg2 = self.opbin(Gi[3], p3andg2, "|")
+            
+            p3andp2andG1 = self.opbin(p3andp2, Gi[1], "&")
+            g3orp3andg2_or_p3andp2andG1 = self.opbin(g3orp3andg2, p3andp2andG1, "|")
+            
+            p3andp2andp1 = self.opbin(p3andp2, Pi[1], "&")
+            p3andp2andp1andG0 = self.opbin(p3andp2andp1, Gi[0], "&")
+            G_groupe = self.opbin(g3orp3andg2_or_p3andp2andG1, p3andp2andp1andG0, "|")
 
-            # C3 = G2 | (P2&G1) | (P2&P1&G0) | (P2&P1&P0&C0)
-            p2_g1 = self.op_multi([Pi[2], Gi[1]], "&")
-            p2_p1_g0 = self.op_multi([Pi[2], Pi[1], Gi[0]], "&")
-            p2_p1_p0_c0 = self.op_multi([Pi[2], Pi[1], Pi[0], c0], "&")
-            c3 = self.op_multi([Gi[2], p2_g1, p2_p1_g0, p2_p1_p0_c0], "|")
+            P_groupeandc0 = self.opbin(P_groupe, c0, "&")
+            c4 = self.opbin(G_groupe, P_groupeandc0, "|")
 
-            # C2 = G1 | (P1&G0) | (P1&P0&C0)
-            p1_g0 = self.op_multi([Pi[1], Gi[0]], "&")
-            p1_p0_c0 = self.op_multi([Pi[1], Pi[0], c0], "&")
-            c2 = self.op_multi([Gi[1], p1_g0, p1_p0_c0], "|")
+            #C3
+            p0andc0 = self.opbin(Pi[0], c0, "&")
+            p2andp1 = self.opbin(Pi[2], Pi[1], "&")
+            p2andp1andp0andc0 = self.opbin(p2andp1, p0andc0, "&")
+            p2andp1andg0 = self.opbin(p2andp1, Gi[0], "&")
+            p2andg1 = self.opbin(Pi[2], Gi[1], "&")
+            g2orp2andg1 = self.opbin(Gi[2], p2andg1, "|")
+            g2orp2andg1_or_p2andp1andg0 = self.opbin(g2orp2andg1, p2andp1andg0, "|")
+            c3 = self.opbin(g2orp2andg1_or_p2andp1andg0, p2andp1andp0andc0, "|")
 
-            # C1 = G0 | (P0&C0)
-            p0_c0 = self.op_multi([Pi[0], c0], "&")
-            c1 = self.op_multi([Gi[0], p0_c0], "|")
+            #C2
+            p1andp0andc0 = self.opbin(p1andp0, c0, "&")
+            p1andg0 = self.opbin(Pi[1], Gi[0], "&")
+            g1orp1andg0 = self.opbin(Gi[1], p1andg0, "|")
+            c2 = self.opbin(g1orp1andg0, p1andp0andc0, "|")
+
+            #C1
+            c1 = self.opbin(Gi[0], p0andc0, "|")
             
             retenues = [c3, c2, c1,c0]
             Gi.reverse()
@@ -1217,7 +1207,7 @@ class bool_circ(open_digraph):
         for id_noeud, noeud in list(self.get_id_node_map().items()):
             if id_noeud not in self.get_id_node_map():
                 continue
-            if noeud.get_label() == "" and noeud.indegree() == 1:
+            if noeud.get_label() == "" and noeud.indegree() == 1 and id_noeud not in self.outputs_ids():
                 p_id = list(noeud.get_parents().keys())[0]
                 parent = self.get_node_by_id(p_id)
                 if parent.get_label() == "~":
@@ -1246,7 +1236,7 @@ class bool_circ(open_digraph):
     
     def simplifier_non_involution(self):
         res = False
-        for id_noeud, noeud in list(self.get_node_map().items()):
+        for id_noeud, noeud in list(self.get_id_node_map().items()):
             if id_noeud not in self.get_id_node_map():
                 continue
             if noeud.get_label() == "~" and noeud.indegree() == 1:
@@ -1285,7 +1275,6 @@ class bool_circ(open_digraph):
                 self.simplifier_non_involution()
             )
         self.nettoyer_noeuds_morts()
-
 
 
     
