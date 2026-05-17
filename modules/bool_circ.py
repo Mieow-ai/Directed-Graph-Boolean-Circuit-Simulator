@@ -632,7 +632,7 @@ class bool_circ(open_digraph):
             flag = False
             for id, noeud in list(self.get_id_node_map().items()):
                 # Si le nœud n'a pas d'enfant ET n'est pas une sortie officielle
-                if noeud.outdegree() == 0 and id not in self.outputs_ids():
+                if noeud.outdegree() == 0 and id not in self.outputs_ids() and id not in self.inputs_ids():
                     self.remove_node_by_id(id)
                     flag = True # On relance car sa suppression a peut-être créé un nouveau nœud mort au-dessus
 
