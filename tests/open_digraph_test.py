@@ -774,7 +774,6 @@ class NodeTest(unittest.TestCase):
         c7.simplifier_non_involution()
         #c7.save_as_pdf("projet-info/Point-4-Rapport/img7_involution_non_APRES.pdf", verbose=False)
 
-        print("\nTous les tests de schémas sont terminés et les PDF sont générés !")
 
 
 if __name__ == '__main__': 
