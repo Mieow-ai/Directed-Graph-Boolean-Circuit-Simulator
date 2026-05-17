@@ -443,9 +443,11 @@ class InitTest(unittest.TestCase):
         b = bool_circ.acyclicToBoolRandom(g, nbInput=2, nbOutput=3)
         self.assertEqual(len(b.inputs_ids()), 2)
         self.assertEqual(len(b.outputs_ids()), 3)
+        #b.display()
         b = bool_circ.acyclicToBoolRandom(g)
         self.assertEqual(len(b.inputs_ids()), 0)
         self.assertEqual(b, bool_circ.empty())
+        
         
     def test_Adder(self):
         #bool_circ.adder0().display()

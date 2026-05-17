@@ -1,4 +1,3 @@
-import os 
 from modules import open_digraph_mx as mx
 # MARK: - Node
 class node:
