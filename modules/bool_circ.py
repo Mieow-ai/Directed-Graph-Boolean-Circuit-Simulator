@@ -1030,51 +1030,51 @@ class bool_circ(open_digraph):
     @classmethod
     def encodeur(cls):
         """
-        Crée le circuit booléen de l'encodeur de Hamming de 4 bits vers 7 bits
+        Créer le circuit booléen de l'encodeur de Hamming de 4 bits vers 7 bits
         return: encodeur
         """
         b = cls.empty()
-        entrees = [b.add_node(label="") for _ in range(4)]
+        entrees = [b.add_node(label="") for i in range(4)]
         for e in entrees:
             b.add_input_id(e)
-        copies = [b.add_node(label="") for _ in range(4)]
+        copies = [b.add_node(label="") for i in range(4)]
         for i in range(4):
             b.add_edge(entrees[i], copies[i])
-        c0, c1, c2, c3 = copies
         xor0 = b.add_node(label="^")
         xor1 = b.add_node(label="^")
         xor2 = b.add_node(label="^")
-        b.add_edge(c0, xor0)
-        b.add_edge(c1, xor0)
-        b.add_edge(c3, xor0)
-        b.add_edge(c3, xor1)
-        b.add_edge(c0, xor1)
-        b.add_edge(c2, xor1)
-        b.add_edge(c1, xor2)
-        b.add_edge(c2, xor2)
-        b.add_edge(c3, xor2)
-        sorties = [b.add_node(label="")for _ in range(7)]
+        b.add_edge(copies[0], xor0)
+        b.add_edge(copies[1], xor0)
+        b.add_edge(copies[3], xor0)
+        b.add_edge(copies[3], xor1)
+        b.add_edge(copies[0], xor1)
+        b.add_edge(copies[2], xor1)
+        b.add_edge(copies[1], xor2)
+        b.add_edge(copies[2], xor2)
+        b.add_edge(copies[3], xor2)
+        sorties = [b.add_node(label="")for i in range(7)]
         b.add_edge(xor0, sorties[0])
         b.add_edge(xor1, sorties[1])
-        b.add_edge(c0, sorties[2])
+        b.add_edge(copies[0], sorties[2])
         b.add_edge(xor2, sorties[3])
-        b.add_edge(c1, sorties[4])
-        b.add_edge(c2, sorties[5])
-        b.add_edge(c3, sorties[6])
+        b.add_edge(copies[1], sorties[4])
+        b.add_edge(copies[2], sorties[5])
+        b.add_edge(copies[3], sorties[6])
         for s in sorties:
             b.add_output_id(s)
         return b
     
     @classmethod
     def decodeur(cls):
-        """Crée le circuit booléen du décodeur de Hamming de 7 bits vers 4 bits
+        """
+        Créer le circuit booléen du décodeur de Hamming de 7 bits vers 4 bits
         return: decodeur
         """
         b = cls.empty()
-        entrees = [b.add_node(label="") for _ in range(7)]
+        entrees = [b.add_node(label="") for i in range(7)]
         for e in entrees:
             b.add_input_id(e)
-        copies = [b.add_node(label="") for _ in range(7)]
+        copies = [b.add_node(label="") for i in range(7)]
         for i in range(7):
             b.add_edge(entrees[i], copies[i])
         
@@ -1137,7 +1137,7 @@ class bool_circ(open_digraph):
         b.add_edge(and3, xors3)
         b.add_edge(copies[6], xors3)
 
-        sorties = [b.add_node(label="") for _ in range(4)]
+        sorties = [b.add_node(label="") for i in range(4)]
         b.add_edge(xors0, sorties[0])
         b.add_edge(xors1, sorties[1])
         b.add_edge(xors2, sorties[2])
@@ -1147,6 +1147,10 @@ class bool_circ(open_digraph):
         return b
 
     def simplifier_xor_associativite(self):
+        """
+        Associativité des portes XOR
+        Si deux portes XOR se suivent on peut les fusionner en une seule
+        """
         res = False
         for id_noeud, noeud in list(self.get_id_node_map().items()):
             if id_noeud not in self.get_id_node_map():
@@ -1167,6 +1171,10 @@ class bool_circ(open_digraph):
         return res
     
     def simplifier_copie_associativite(self):
+        """
+        Associativité des portes copie
+        Si deux portes copie se suivent on peut les fusionner en une seule 
+        """
         res = False
         for id_noeud, noeud in list(self.get_id_node_map().items()):
             if id_noeud not in self.get_id_node_map():
@@ -1183,6 +1191,10 @@ class bool_circ(open_digraph):
         return res
 
     def simplifier_xor_involution(self):
+        """
+        Involution des portes XOR
+        Si une porte XOR a deux liens vers le même parent on les retire
+        """
         res = False
         for id_noeud, noeud in list(self.get_id_node_map().items()):
             if id_noeud not in self.get_id_node_map():
@@ -1198,6 +1210,10 @@ class bool_circ(open_digraph):
         return res 
 
     def simplifier_non_travers_xor(self):
+        """
+        Non à travers XOR
+        Si une porte NOT est suivi d'une porte XOR on peut retirer la porte NOT et mettre un NOT après la porte XOR
+        """
         res = False
         for id_noeud, noeud in list(self.get_id_node_map().items()):
             if id_noeud not in self.get_id_node_map():
@@ -1227,6 +1243,10 @@ class bool_circ(open_digraph):
         return res
 
     def simplifier_non_travers_copie(self):
+        """
+        Non à travers Copie
+        Si une porte NOT est suivi d'une porte Copie on peut retirer la porte NOT et mettre un NOT après la porte Copie
+        """
         res = False
         for id_noeud, noeud in list(self.get_id_node_map().items()):
             if id_noeud not in self.get_id_node_map():
@@ -1259,6 +1279,10 @@ class bool_circ(open_digraph):
         return res
     
     def simplifier_non_involution(self):
+        """
+        Involution NOT
+        Si deux portes NOT se suivent on peut les retirer
+        """
         res = False
         for id_noeud, noeud in list(self.get_id_node_map().items()):
             if id_noeud not in self.get_id_node_map():
@@ -1283,6 +1307,9 @@ class bool_circ(open_digraph):
         return res
 
     def simplifier_complet(self):
+        """
+        Simplifie le graphe au maximum en appliquant toutes les simplifications.
+        """
         flag = True
         while flag:
             flag = (
