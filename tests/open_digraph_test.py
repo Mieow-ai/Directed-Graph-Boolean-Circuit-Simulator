@@ -566,31 +566,6 @@ class InitTest(unittest.TestCase):
         somme = bool_circ.cla_somme16(28240,12345)
         self.assertEqual(somme, 28240+12345)
 
-class NodeTest(unittest.TestCase):
-    def setUp(self):
-        self.n0 = node(0, 'i', {1: 1}, {2: 2})
-        
-    def test_getters_setters(self):
-        self.assertEqual(self.n0.get_id(), 0)
-        self.assertEqual(self.n0.get_label(), 'i')
-        self.assertEqual(self.n0.get_parents(), {1: 1})
-        self.assertEqual(self.n0.get_children(), {2: 2})
-        self.n0.set_id(5)
-        self.assertEqual(self.n0.get_id(), 5)
-        
-    def test_add_remove_child_parent(self):
-        self.n0.add_child_id(3, 1)
-        self.assertEqual(self.n0.get_children(), {2: 2, 3: 1})
-        self.n0.remove_child_once(2)
-        self.assertEqual(self.n0.get_children(), {2: 1, 3: 1})
-        self.n0.remove_child_id(2)
-        self.assertEqual(self.n0.get_children(), {3: 1})
-
-    def test_degree(self):
-        self.assertEqual(self.n0.indegree(), 1)
-        self.assertEqual(self.n0.outdegree(), 2)
-        self.assertEqual(self.n0.degree(), 3)
-
     def test_encodeur(self):
         encodeur = bool_circ.encodeur()
         #encodeur.save_as_pdf("test_encodeur.pdf")
@@ -598,6 +573,45 @@ class NodeTest(unittest.TestCase):
     def test_decodeur(self):
         decodeur = bool_circ.decodeur()
         #decodeur.save_as_pdf("test_decodeur.pdf")
+
+    def test_proprieteHamming(self):
+        encodeur = bool_circ.encodeur()
+        decodeur = bool_circ.decodeur()
+        circuit = encodeur.compo_sequentielle(decodeur)
+        #circuit.save_as_pdf("test_proprieteHammingBefore.pdf", verbose=True)
+        circuit.simplifier_complet()
+        #circuit.save_as_pdf("test_proprieteHamming.pdf", verbose=True)
+
+    def test_proprieteHamming_1erreur(self):
+        for i in range(7):
+            encodeur = bool_circ.encodeur()
+            decodeur = bool_circ.decodeur()
+            noeud_sortie_i = encodeur.outputs_ids()[i]
+            negation = encodeur.add_node()
+            encodeur.get_node_by_id(negation).set_label("~")
+            encodeur.add_edge(noeud_sortie_i, negation)
+            new_id_sortie = encodeur.add_node()
+            encodeur.add_edge(negation, new_id_sortie)
+            encodeur.outputs[i] = new_id_sortie # On remplace la sortie à l'emplacement exacte pour introduire l'erreur sans changer l'ordre des sorties
+            circuit = encodeur.compo_sequentielle(decodeur)
+            circuit.simplifier_complet()
+           #circuit.save_as_pdf(f"test_Hamming_1erreur_bit_{i}.pdf", verbose=True)
+
+    def test_proprieteHamming_2erreurs(self):
+        encodeur = bool_circ.encodeur()
+        decodeur = bool_circ.decodeur()
+        for i in [2,4]:
+            noeud_sortie_i = encodeur.outputs_ids()[i]
+            negation = encodeur.add_node()
+            encodeur.get_node_by_id(negation).set_label("~")
+            encodeur.add_edge(noeud_sortie_i, negation)
+            new_id_sortie = encodeur.add_node()
+            encodeur.add_edge(negation, new_id_sortie)
+            encodeur.outputs[i] = new_id_sortie # On remplace la sortie à l'emplacement exacte pour introduire l'erreur sans changer l'ordre des sorties
+        circuit = encodeur.compo_sequentielle(decodeur)
+        circuit.simplifier_complet()
+        #circuit.save_as_pdf("test_Hamming_2erreurs.pdf", verbose=True)
+
 
     def test_point_2(self):
         print("\n" + "="*50)
@@ -649,7 +663,7 @@ class NodeTest(unittest.TestCase):
         print(f"{'n (taille = 2^n)':<25} | {'Profondeur':<12} | {'Nombre de noeuds/Portes':<18} | {'Plus court chemin'}")
         print("-"*75)
 
-        for n in range(2, 4):
+        for n in range(2, 5):
             cla = bool_circ.cla_half_adder(n)
             pr = cla.profondeur()
             nb_noeuds = len(cla.get_nodes())
@@ -661,6 +675,20 @@ class NodeTest(unittest.TestCase):
                         min_path = dist       
             print(f"n={n} ({2**n} bits) CLA {'':<8} | {pr:<12} | {nb_noeuds:<23} | {min_path}")
 
+        print("\n" + "-"*75)
+        print("CLA 16 bits (CLA par bloc):")
+        print(f"{'n (taille = 2^n)':<25} | {'Profondeur':<12} | {'Nombre de noeuds/Portes':<18} | {'Plus court chemin'}")
+        print("-"*75)
+        cla = bool_circ.cla_half_adder16()
+        pr = cla.profondeur()
+        nb_noeuds = len(cla.get_nodes())
+        min_path = float('inf')
+        for in_id in cla.inputs_ids():
+            for out_id in cla.outputs_ids():
+                dist, path = cla.shortest_path(in_id, out_id)
+                if dist is not None and dist < min_path:
+                    min_path = dist       
+        print(f"n={4} ({2**4} bits) CLA {'':<8} | {pr:<12} | {nb_noeuds:<23} | {min_path}")
     def test_point_4(self):
         print("\n" + "="*50)
         print("POINT 4 : Étapes de simplification (comme sur le diagramme)")
@@ -775,6 +803,55 @@ class NodeTest(unittest.TestCase):
         #c7.save_as_pdf("projet-info/Point-4-Rapport/img7_involution_non_APRES.pdf", verbose=False)
 
 
+class NodeTest(unittest.TestCase):
+    def setUp(self):
+        self.n0 = node(0, 'i', {1: 1}, {2: 2})
+        
+    def test_getters_setters(self):
+        self.assertEqual(self.n0.get_id(), 0)
+        self.assertEqual(self.n0.get_label(), 'i')
+        self.assertEqual(self.n0.get_parents(), {1: 1})
+        self.assertEqual(self.n0.get_children(), {2: 2})
+        self.n0.set_id(5)
+        self.assertEqual(self.n0.get_id(), 5)
+        
+    def test_add_remove_child_parent(self):
+        self.n0.add_child_id(3, 1)
+        self.assertEqual(self.n0.get_children(), {2: 2, 3: 1})
+        self.n0.remove_child_once(2)
+        self.assertEqual(self.n0.get_children(), {2: 1, 3: 1})
+        self.n0.remove_child_id(2)
+        self.assertEqual(self.n0.get_children(), {3: 1})
+
+    def test_degree(self):
+        self.assertEqual(self.n0.indegree(), 1)
+        self.assertEqual(self.n0.outdegree(), 2)
+        self.assertEqual(self.n0.degree(), 3)
+
+class RatioMoyenSimplification(unittest.TestCase):
+    def test_ratio_moyen_simplification(self):
+        avant_liste = []
+        apres_liste = []
+        print("\n")
+        for _ in range(30):
+            nb_noeuds = random.randint(10, 100)
+            g = open_digraph.random(nb_noeuds,3,form="DAG")
+            b = bool_circ.acyclicToBoolRandom(g)
+            nb_portes_avant = b.nb_portes()
+            avant_liste.append(nb_portes_avant)
+            b.simplifier_optimiser_complet()
+            nb_portes_apres = b.nb_portes()
+            apres_liste.append(nb_portes_apres)
+            print(f"Nombre de portes avant simplification : {nb_portes_avant}, après simplification : {nb_portes_apres}, ratio : {1 - nb_portes_apres/nb_portes_avant:.2f}")
+        ratio_moyen = 0
+        for i in range(len(avant_liste)):
+            ratio = float(apres_liste[i]) / float(avant_liste[i])
+            ratio_moyen += ratio
+        ratio_moyen /= len(avant_liste)
+        ratio_moyen = 1 - ratio_moyen
+        print(f"\nRatio moyen de simplification sur 30 graphes aléatoires : {ratio_moyen*100:.2f}%")
+
+        
 
 if __name__ == '__main__': 
     unittest.main()

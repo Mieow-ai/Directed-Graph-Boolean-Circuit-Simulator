@@ -465,290 +465,7 @@ class bool_circ(open_digraph):
         id = inputs.pop()
         adder.set_inputs(inputs)
         adder.get_node_by_id(id).set_label(str(retenue)) 
-        return adder 
-    
-    @classmethod
-    def registre(cls,entier, n=8):
-        """
-        Crée un registre de taille n représentant un entier. 
-        Lève une erreur si l'entier ne peut pas être représenté sur n bits.
-        param entier: entier à convertir en registre
-        param n: taille du registre
-        return: registre
-        """
-        if(entier >= 2**n):
-            raise ValueError("Entier trop grand")
-        binaire = bin(entier)[2:]
-        zeros = ""
-        if(len(binaire)<n):
-            zeros = "0" * (n-len(binaire))
-        binaire = zeros+binaire
-        b = cls.empty()
-        for i in binaire:
-            idN = b.add_node(label=i)
-            idS = b.add_node()
-            b.add_edge(idN,idS)
-            b.add_output_id(idS)
-        return b
-    
-    def simplifier_copie(self):
-        """
-        Simplifie les copies de noeuds
-        return: True si des copies ont été simplifiées, False sinon
-        """
-        res = False
-        for id, noeud in list(self.get_id_node_map().items()):
-            if id not in self.get_id_node_map(): continue
-            if noeud.get_label() == "" and noeud.indegree() == 1 and noeud.outdegree() > 0:
-                id_enfants = list(noeud.get_children().keys())
-                id_parent = list(noeud.get_parents().keys())[0]
-                parent = self.get_node_by_id(id_parent)
-                label = parent.get_label()
-                if(label == "0" or label == "1"):
-                    for id_enfant in id_enfants:
-                        idN = self.add_node(label=label)
-                        self.add_edge(idN, id_enfant)
-                        self.remove_edge(id, id_enfant)
-                    if(noeud in self.outputs_ids()):
-                        noeud.set_label(label)
-                    else: 
-                        self.remove_node_by_id(id)
-                    res = True
-        return res
-    
-    def simplifier_non(self):
-        """
-        Simplifie les non de noeuds
-        return: True si des non ont été simplifiés, False sinon
-        """
-        res = False
-        for id, noeud in list(self.get_id_node_map().items()):
-            if id not in self.get_id_node_map(): continue
-            if noeud.get_label() == "~":
-                parents = list(noeud.get_parents().keys())
-                for id_parent in parents:
-                    parent = self.get_node_by_id(id_parent)
-                    label = parent.get_label()
-                    if(label == "0" or label == "1"):
-                        nouveau_label = "1" if label == "0" else "0"
-                        enfants = list(noeud.get_children().keys())
-                        for id_enfant in enfants:
-                            idN = self.add_node(label=nouveau_label)
-                            self.add_edge(idN, id_enfant)
-                        if(noeud in self.outputs_ids()):
-                            noeud.set_label(nouveau_label)     
-                        else:
-                            self.remove_node_by_id(id)                  
-                        res = True
-        return res
-                
-    def simplifier_et(self):
-        """
-        Simplifie les et de noeuds
-        return: True si des et ont été simplifiés, False sinon
-        """
-        res = False
-        for id, noeud in list(self.get_id_node_map().items()):
-            if id not in self.get_id_node_map(): continue
-            if noeud.get_label() == "&":
-                parents = list(noeud.get_parents().keys())
-                if any(self.get_node_by_id(parent).get_label() == "0" for parent in parents):
-                    for id_enfant in list(noeud.get_children().keys()):
-                        idN = self.add_node(label="0")
-                        self.add_edge(idN, id_enfant)
-                    if(noeud in self.outputs_ids()):
-                        noeud.set_label(0)
-                    else :
-                        self.remove_node_by_id(id)
-                    res = True
-                else:
-                    parents_1 = [p for p in parents if self.get_node_by_id(p).get_label() == "1"]
-                    for p in parents_1:
-                        self.remove_edge(p, id)
-                        res = True
-        return res
-
-    def simplifier_ou(self):
-        """
-        Simplifie les ou de noeuds
-        return: True si des ou ont été simplifiés, False sinon
-        """
-        res = False
-        for id, noeud in list(self.get_id_node_map().items()):
-            if id not in self.get_id_node_map(): continue
-            if noeud.get_label() == "|":
-                parents = list(noeud.get_parents().keys())
-                if any(self.get_node_by_id(parent).get_label() == "1" for parent in parents):
-                    for id_enfant in list(noeud.get_children().keys()):
-                        idN = self.add_node(label="1")
-                        self.add_edge(idN, id_enfant)
-                    if(noeud in self.outputs_ids()):
-                        noeud.set_label(1)
-                    self.remove_node_by_id(id)
-                    res = True
-                else:
-                    parents_0 = [p for p in parents if self.get_node_by_id(p).get_label() == "0"]
-                    for p in parents_0:
-                        self.remove_edge(p, id)
-                        res = True
-            
-        return res
-    
-    def simplifier_ou_exclusif(self):
-        """
-        Simplifie les ou exclusif de noeuds
-        :return: True si des ou exclusif ont été simplifiés, False sinon
-        """
-        res = False
-        for id, noeud in list(self.get_id_node_map().items()):
-            if id not in self.get_id_node_map(): continue
-            if noeud.get_label() == "^":
-                parents = list(noeud.get_parents().keys())
-                for id_parent in parents:
-                    parent = self.get_node_by_id(id_parent)
-                    if(parent.get_label() == "0"):
-                        self.remove_edge(id_parent, id)
-                        res = True
-                    elif(parent.get_label() == "1"):
-                        self.remove_edge(id_parent, id)
-                        idN = self.add_node(label="~")
-                        for id_enfant in list(noeud.get_children().keys()):
-                            self.add_edge(idN, id_enfant)
-                            self.remove_edge(id, id_enfant)
-                        self.add_edge(id, idN)
-                        if(id in self.outputs_ids) :
-                            self.outputs_ids.append(idN)
-                            self.outputs_ids.remove(id)
-                        res = True
-        return res
-    
-    def simplifier_neutre(self):
-        """
-        Simplifie les neutres de noeuds
-        return: True si des neutres ont été simplifiés, False sinon
-        """
-        res = False
-        for id, noeud in list(self.get_id_node_map().items()):
-            if id not in self.get_id_node_map(): continue
-            if noeud.get_label() == "&" and noeud.indegree() == 0 :
-                noeud.set_label("1")
-                res = True
-            elif ((noeud.get_label() == "|" or noeud.get_label() == "^") and noeud.indegree() == 0) :
-                noeud.set_label("0")
-                res = True
-        return res
-    
-    
-    def nettoyer_noeuds_morts(self):
-        flag = True
-        while flag:
-            flag = False
-            for id, noeud in list(self.get_id_node_map().items()):
-                # Si le nœud n'a pas d'enfant ET n'est pas une sortie officielle
-                if noeud.outdegree() == 0 and id not in self.outputs_ids() and id not in self.inputs_ids():
-                    self.remove_node_by_id(id)
-                    flag = True # On relance car sa suppression a peut-être créé un nouveau nœud mort au-dessus
-
-    def simplifier_naif(self):
-        """
-        Simplifie le circuit de manière naïve
-        """
-        flag = True
-        while flag:
-            flag = self.simplifier_copie() or self.simplifier_non() or self.simplifier_et() or self.simplifier_ou() or self.simplifier_ou_exclusif() or self.simplifier_neutre()
-        self.nettoyer_noeuds_morts()
-
-    @classmethod
-    def somme(cls, entier1, entier2):
-        """
-        Calcule la somme de deux entiers en passant par les additionneurs de half_adder
-        :param entier1: premier entier
-        :param entier2: deuxième entier
-        :return: somme
-        """
-        registre1 = bool_circ.registre(entier1)
-        registre2 = bool_circ.registre(entier2)
-        registres= registre1.compo_parallele(registre2)
-        adder3 = bool_circ.half_adder(3)
-        circuit = registres.compo_sequentielle(adder3)
-        return circuit.evaluer() 
-    
-    def evaluer(self):
-        """
-        Parcours le circuit de haut en bas (via un tri topologique) 
-        et calcule la sortie finale en appliquant les règles des portes logiques (&, |, ^, ~)
-        return : entier correspondant à la sortie du circuit
-        """
-        circuit = self.copy() # On travaille sur une copie du circuit pour ne pas modifier le circuit
-        tri_topo = circuit.tri_topologique()
-        for niveau in tri_topo:
-            for id in niveau:
-                node = circuit.get_node_by_id(id)
-                if node.get_label() == "0" or node.get_label() == "1": # Cette ligne n'est utilisée que lors du passage du premier niveau
-                    continue
-                elif node.get_label() == "" or node.get_label()==None: #Noeud de copie ou de sortie
-                    if len(node.get_parents()) != 1:
-                       raise ValueError("Un noeud de copie ou de sortie doit avoir exactement un parent")
-                    id_parent= list(node.get_parents().keys())[0] # un seul parent
-                    parent = circuit.get_node_by_id(id_parent)
-                    node.set_label(parent.get_label())
-                elif node.get_label() == "~":
-                    if len(node.get_parents()) != 1:
-                       raise ValueError("Un noeud unaire doit avoir exactement un parent")
-                    id_parent= list(node.get_parents().keys())[0] # un seul parent
-                    parent = circuit.get_node_by_id(id_parent)
-                    if parent.get_label() == "0":
-                        node.set_label("1")
-                    elif parent.get_label() == "1":
-                        node.set_label("0")
-                    else:
-                        raise ValueError("Lors de l'évaluation du noeud, son parent doit avoir une valeur binaire")
-                elif node.get_label() == "&":
-                    setfalse = False
-                    node.set_label("1")
-                    for idparent in node.get_parents().keys():
-                        parent = circuit.get_node_by_id(idparent)
-                        if parent.get_label() not in ["0", "1"]:
-                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
-                        if not(setfalse) and parent.get_label() == "0":
-                            node.set_label("0")
-                            setfalse = True
-                elif node.get_label() == "|":
-                    # Changement de logique pour que les noeuds de base binaire peuvent avoir plusieurs parents
-                    node.set_label("0")
-                    settrue = False 
-                    for idparent in node.get_parents().keys():
-                        parent = circuit.get_node_by_id(idparent)
-                        if parent.get_label() not in ["0", "1"]:
-                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
-                        if not(settrue) and parent.get_label() == "1" :
-                            node.set_label("1")   
-                            settrue = True
-
-                elif node.get_label() == "^": #XOR
-                    cpt = 0
-                    for idparent, multiplicity in node.get_parents().items():
-                        parent = circuit.get_node_by_id(idparent)
-                        label = parent.get_label()
-                        if label not in ["0", "1"]:
-                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
-                        if label == "1":
-                            cpt += multiplicity
-                    # Le XOR est vrai si un nombre impair de ses parents sont vrais (avec les multiplicités)
-                    if cpt % 2 == 0: 
-                        node.set_label("0")
-                    else: 
-                        node.set_label("1")
-                else:
-                    raise ValueError("Label de noeud invalide lors de l'évaluation du circuit")
-        string_sortie = ""
-        for id in circuit.outputs_ids():
-            node = circuit.get_node_by_id(id)
-            if node.get_label() not in ["0", "1"]:
-                raise ValueError("Les noeuds de sortie doivent avoir des valeurs binaires")
-            string_sortie += node.get_label()
-        
-        return int(string_sortie, 2)
+        return adder
 
     @classmethod
     def cla_adder4(cls,retenue=None, superCla = False):
@@ -873,22 +590,7 @@ class bool_circ(open_digraph):
             retenues = [c3, c2, c1,c0]
             Gi.reverse()
             Pi.reverse()
-            return retenues, P_groupe, G_groupe, c4
-            
-    @classmethod
-    def cla_somme4(cls, entier1, entier2):
-        """
-        Somme de deux entiers sur 4 bits via un adder cla de 4 bits
-        param: entier1
-        param: entier2
-        """
-        cla = cls.cla_adder4(retenue="0")
-        registre1 = cls.registre(entier1, n=4)
-        registre2 = cls.registre(entier2, n=4)
-        registres= registre1.compo_parallele(registre2)
-        circuit = registres.compo_sequentielle(cla)
-        return circuit.evaluer()
-        
+            return retenues, P_groupe, G_groupe, c4 
     @classmethod      
     def cla_adder(cls,n):
         """
@@ -946,21 +648,6 @@ class bool_circ(open_digraph):
         adder.set_inputs(inputs)
         adder.get_node_by_id(id).set_label(str(retenue)) # on fixe la retenue entrante à 0 par défaut
         return adder
-
-    @classmethod
-    def cla_somme(cls, entier1, entier2):
-        """
-        Somme de deux entiers sur 8 bits via un half adder composé de deux adders cla de 4 bits
-        param: entier1
-        param: entier2
-        return : somme de entier1 et entier2
-        """
-        registre1 = bool_circ.registre(entier1)
-        registre2 = bool_circ.registre(entier2)
-        registres= registre1.compo_parallele(registre2)
-        adder3 = bool_circ.cla_half_adder(3)
-        circuit = registres.compo_sequentielle(adder3)
-        return circuit.evaluer() 
     
     @classmethod 
     def cla_adder16(cls):
@@ -1011,6 +698,319 @@ class bool_circ(open_digraph):
         adder.set_inputs(inputs)
         adder.get_node_by_id(id).set_label(str(retenue)) # on fixe la retenue entrante à 0 par défaut
         return adder
+    
+    @classmethod
+    def registre(cls,entier, n=8):
+        """
+        Crée un registre de taille n représentant un entier. 
+        Lève une erreur si l'entier ne peut pas être représenté sur n bits.
+        param entier: entier à convertir en registre
+        param n: taille du registre
+        return: registre
+        """
+        if(entier >= 2**n):
+            raise ValueError("Entier trop grand")
+        binaire = bin(entier)[2:]
+        zeros = ""
+        if(len(binaire)<n):
+            zeros = "0" * (n-len(binaire))
+        binaire = zeros+binaire
+        b = cls.empty()
+        for i in binaire:
+            idN = b.add_node(label=i)
+            idS = b.add_node()
+            b.add_edge(idN,idS)
+            b.add_output_id(idS)
+        return b
+    
+    def simplifier_copie(self):
+        """
+        Simplifie les copies de noeuds
+        return: True si des copies ont été simplifiées, False sinon
+        """
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
+            if noeud.get_label() == "" and noeud.indegree() == 1 and noeud.outdegree() > 0:                
+                id_enfants = list(noeud.get_children().items())
+                id_parent = list(noeud.get_parents().keys())[0]
+                parent_mult = noeud.get_parents()[id_parent]
+                
+                for id_enfant, mult_enfant in id_enfants:
+                    self.add_edgeM(id_parent, id_enfant, parent_mult * mult_enfant)
+                    self.remove_edge(id, id_enfant)
+                self.remove_node_by_id(id)
+                res = True
+        return res
+    
+    def simplifier_non(self):
+        """
+        Simplifie les non de noeuds
+        return: True si des non ont été simplifiés, False sinon
+        """
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
+            if noeud.get_label() == "~":
+                parents = list(noeud.get_parents().keys())
+                for id_parent in parents:
+                    parent = self.get_node_by_id(id_parent)
+                    label = parent.get_label()
+                    if(label == "0" or label == "1"):
+                        nouveau_label = "1" if label == "0" else "0"
+                        enfants = list(noeud.get_children().keys())
+                        for id_enfant in enfants:
+                            idN = self.add_node(label=nouveau_label)
+                            self.add_edge(idN, id_enfant)
+                        if(noeud in self.outputs_ids()):
+                            noeud.set_label(nouveau_label)     
+                        else:
+                            self.remove_node_by_id(id)                  
+                        res = True
+        return res
+                
+    def simplifier_et(self):
+        """
+        Simplifie les et de noeuds
+        return: True si des et ont été simplifiés, False sinon
+        """
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
+            if noeud.get_label() == "&":
+                parents = list(noeud.get_parents().keys())
+                if any(self.get_node_by_id(parent).get_label() == "0" for parent in parents):
+                    for id_enfant in list(noeud.get_children().keys()):
+                        idN = self.add_node(label="0")
+                        self.add_edge(idN, id_enfant)
+                    if(noeud in self.outputs_ids()):
+                        noeud.set_label(0)
+                    else :
+                        self.remove_node_by_id(id)
+                    res = True
+                else:
+                    parents_1 = [p for p in parents if self.get_node_by_id(p).get_label() == "1"]
+                    for p in parents_1:
+                        self.remove_edge(p, id)
+                        res = True
+        return res
+
+    def simplifier_ou(self):
+        """
+        Simplifie les ou de noeuds
+        return: True si des ou ont été simplifiés, False sinon
+        """
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
+            if noeud.get_label() == "|":
+                parents = list(noeud.get_parents().keys())
+                if any(self.get_node_by_id(parent).get_label() == "1" for parent in parents):
+                    for id_enfant in list(noeud.get_children().keys()):
+                        idN = self.add_node(label="1")
+                        self.add_edge(idN, id_enfant)
+                    if(noeud in self.outputs_ids()):
+                        noeud.set_label(1)
+                    self.remove_node_by_id(id)
+                    res = True
+                else:
+                    parents_0 = [p for p in parents if self.get_node_by_id(p).get_label() == "0"]
+                    for p in parents_0:
+                        self.remove_edge(p, id)
+                        res = True
+            
+        return res
+    
+    def simplifier_ou_exclusif(self):
+        """
+        Simplifie les ou exclusif de noeuds
+        :return: True si des ou exclusif ont été simplifiés, False sinon
+        """
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
+            if noeud.get_label() == "^":
+                parents = list(noeud.get_parents().keys())
+                for id_parent in parents:
+                    parent = self.get_node_by_id(id_parent)
+                    if(parent.get_label() == "0"):
+                        self.remove_edge(id_parent, id)
+                        res = True
+                    elif(parent.get_label() == "1"):
+                        self.remove_edge(id_parent, id)
+                        idN = self.add_node(label="~")
+                        for id_enfant in list(noeud.get_children().keys()):
+                            self.add_edge(idN, id_enfant)
+                            self.remove_edge(id, id_enfant)
+                        self.add_edge(id, idN)
+                        if(id in self.outputs_ids()):
+                            idx = self.outputs.index(id)
+                            self.outputs[idx] = idN
+                        res = True
+        return res
+    
+    def simplifier_neutre(self):
+        """
+        Simplifie les neutres de noeuds
+        return: True si des neutres ont été simplifiés, False sinon
+        """
+        res = False
+        for id, noeud in list(self.get_id_node_map().items()):
+            if id not in self.get_id_node_map(): continue
+            if noeud.get_label() == "&" and noeud.indegree() == 0 :
+                noeud.set_label("1")
+                res = True
+            elif ((noeud.get_label() == "|" or noeud.get_label() == "^") and noeud.indegree() == 0) :
+                noeud.set_label("0")
+                res = True
+            elif noeud.get_label() in ["&", "|", "^"] and noeud.indegree() == 1: # Un opérateur avec un seul parent est simplement un noeud de copie
+                noeud.set_label("")
+                res = True
+        return res
+    
+    
+    def nettoyer_noeuds_morts(self):
+        flag = True
+        while flag:
+            flag = False
+            for id, noeud in list(self.get_id_node_map().items()):
+                # Si le nœud n'a pas d'enfant ET n'est pas une sortie officielle
+                if noeud.outdegree() == 0 and id not in self.outputs_ids() and id not in self.inputs_ids():
+                    self.remove_node_by_id(id)
+                    flag = True # On relance car sa suppression a peut-être créé un nouveau nœud mort au-dessus
+
+    def simplifier_naif(self):
+        """
+        Simplifie le circuit de manière naïve
+        """
+        flag = True
+        while flag:
+            flag = self.simplifier_copie() or self.simplifier_non() or self.simplifier_et() or self.simplifier_ou() or self.simplifier_ou_exclusif() or self.simplifier_neutre()
+        self.nettoyer_noeuds_morts()
+    
+    def evaluer(self, etapes=False, path=None):
+        """
+        Parcours le circuit de haut en bas (via un tri topologique) 
+        et calcule la sortie finale en appliquant les règles des portes logiques (&, |, ^, ~)
+        return : entier correspondant à la sortie du circuit
+        """
+        circuit = self.copy() # On travaille sur une copie du circuit pour ne pas modifier le circuit
+        tri_topo = circuit.tri_topologique()
+        i = 0
+        for niveau in tri_topo:
+            for id in niveau:
+                node = circuit.get_node_by_id(id)
+                if node.get_label() == "0" or node.get_label() == "1": # Cette ligne n'est utilisée que lors du passage du premier niveau
+                    continue
+                elif node.get_label() == "" or node.get_label()==None: #Noeud de copie ou de sortie
+                    if len(node.get_parents()) != 1:
+                       raise ValueError("Un noeud de copie ou de sortie doit avoir exactement un parent")
+                    id_parent= list(node.get_parents().keys())[0] # un seul parent
+                    parent = circuit.get_node_by_id(id_parent)
+                    node.set_label(parent.get_label())
+                elif node.get_label() == "~":
+                    if len(node.get_parents()) != 1:
+                       raise ValueError("Un noeud unaire doit avoir exactement un parent")
+                    id_parent= list(node.get_parents().keys())[0] # un seul parent
+                    parent = circuit.get_node_by_id(id_parent)
+                    if parent.get_label() == "0":
+                        node.set_label("1")
+                    elif parent.get_label() == "1":
+                        node.set_label("0")
+                    else:
+                        raise ValueError("Lors de l'évaluation du noeud, son parent doit avoir une valeur binaire")
+                elif node.get_label() == "&":
+                    setfalse = False
+                    node.set_label("1")
+                    for idparent in node.get_parents().keys():
+                        parent = circuit.get_node_by_id(idparent)
+                        if parent.get_label() not in ["0", "1"]:
+                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                        if not(setfalse) and parent.get_label() == "0":
+                            node.set_label("0")
+                            setfalse = True
+                elif node.get_label() == "|":
+                    # Changement de logique pour que les noeuds de base binaire peuvent avoir plusieurs parents
+                    node.set_label("0")
+                    settrue = False 
+                    for idparent in node.get_parents().keys():
+                        parent = circuit.get_node_by_id(idparent)
+                        if parent.get_label() not in ["0", "1"]:
+                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                        if not(settrue) and parent.get_label() == "1" :
+                            node.set_label("1")   
+                            settrue = True
+
+                elif node.get_label() == "^": #XOR
+                    cpt = 0
+                    for idparent, multiplicity in node.get_parents().items():
+                        parent = circuit.get_node_by_id(idparent)
+                        label = parent.get_label()
+                        if label not in ["0", "1"]:
+                            raise ValueError("Lors de l'évaluation du noeud, ses parents doivent avoir des valeurs binaires")
+                        if label == "1":
+                            cpt += multiplicity
+                    # Le XOR est vrai si un nombre impair de ses parents sont vrais (avec les multiplicités)
+                    if cpt % 2 == 0: 
+                        node.set_label("0")
+                    else: 
+                        node.set_label("1")
+                else:
+                    raise ValueError("Label de noeud invalide lors de l'évaluation du circuit")
+            if etapes and path != None:
+                circuit.save_as_pdf(path=(path+str(i)+".pdf"))
+                i+=1
+        string_sortie = ""
+        for id in circuit.outputs_ids():
+            node = circuit.get_node_by_id(id)
+            if node.get_label() not in ["0", "1"]:
+                raise ValueError("Les noeuds de sortie doivent avoir des valeurs binaires")
+            string_sortie += node.get_label()
+        return int(string_sortie, 2)
+
+    @classmethod
+    def somme(cls, entier1, entier2):
+        """
+        Calcule la somme de deux entiers en passant par les additionneurs de half_adder
+        :param entier1: premier entier
+        :param entier2: deuxième entier
+        :return: somme
+        """
+        registre1 = bool_circ.registre(entier1)
+        registre2 = bool_circ.registre(entier2)
+        registres= registre1.compo_parallele(registre2)
+        adder3 = bool_circ.half_adder(3)
+        circuit = registres.compo_sequentielle(adder3)
+        return circuit.evaluer() 
+         
+    @classmethod
+    def cla_somme4(cls, entier1, entier2):
+        """
+        Somme de deux entiers sur 4 bits via un adder cla de 4 bits
+        param: entier1
+        param: entier2
+        """
+        cla = cls.cla_adder4(retenue="0")
+        registre1 = cls.registre(entier1, n=4)
+        registre2 = cls.registre(entier2, n=4)
+        registres= registre1.compo_parallele(registre2)
+        circuit = registres.compo_sequentielle(cla)
+        return circuit.evaluer()
+
+    @classmethod
+    def cla_somme(cls, entier1, entier2):
+        """
+        Somme de deux entiers sur 8 bits via un half adder composé de deux adders cla de 4 bits
+        param: entier1
+        param: entier2
+        return : somme de entier1 et entier2
+        """
+        registre1 = bool_circ.registre(entier1)
+        registre2 = bool_circ.registre(entier2)
+        registres= registre1.compo_parallele(registre2)
+        adder3 = bool_circ.cla_half_adder(3)
+        circuit = registres.compo_sequentielle(adder3)
+        return circuit.evaluer() 
 
     @classmethod
     def cla_somme16(cls, entier1, entier2):
@@ -1029,59 +1029,73 @@ class bool_circ(open_digraph):
 
     @classmethod
     def encodeur(cls):
+        """
+        Crée le circuit booléen de l'encodeur de Hamming de 4 bits vers 7 bits
+        return: encodeur
+        """
         b = cls.empty()
         entrees = [b.add_node(label="") for _ in range(4)]
         for e in entrees:
             b.add_input_id(e)
-        e0, e1, e2, e3 = entrees
+        copies = [b.add_node(label="") for _ in range(4)]
+        for i in range(4):
+            b.add_edge(entrees[i], copies[i])
+        c0, c1, c2, c3 = copies
         xor0 = b.add_node(label="^")
         xor1 = b.add_node(label="^")
         xor2 = b.add_node(label="^")
-        b.add_edge(e0, xor0)
-        b.add_edge(e1, xor0)
-        b.add_edge(e3, xor0)
-        b.add_edge(e3, xor1)
-        b.add_edge(e0, xor1)
-        b.add_edge(e2, xor1)
-        b.add_edge(e1, xor2)
-        b.add_edge(e2, xor2)
-        b.add_edge(e3, xor2)
+        b.add_edge(c0, xor0)
+        b.add_edge(c1, xor0)
+        b.add_edge(c3, xor0)
+        b.add_edge(c3, xor1)
+        b.add_edge(c0, xor1)
+        b.add_edge(c2, xor1)
+        b.add_edge(c1, xor2)
+        b.add_edge(c2, xor2)
+        b.add_edge(c3, xor2)
         sorties = [b.add_node(label="")for _ in range(7)]
         b.add_edge(xor0, sorties[0])
         b.add_edge(xor1, sorties[1])
-        b.add_edge(e0, sorties[2])
+        b.add_edge(c0, sorties[2])
         b.add_edge(xor2, sorties[3])
-        b.add_edge(e1, sorties[4])
-        b.add_edge(e2, sorties[5])
-        b.add_edge(e3, sorties[6])
+        b.add_edge(c1, sorties[4])
+        b.add_edge(c2, sorties[5])
+        b.add_edge(c3, sorties[6])
         for s in sorties:
             b.add_output_id(s)
         return b
     
     @classmethod
     def decodeur(cls):
+        """Crée le circuit booléen du décodeur de Hamming de 7 bits vers 4 bits
+        return: decodeur
+        """
         b = cls.empty()
         entrees = [b.add_node(label="") for _ in range(7)]
         for e in entrees:
             b.add_input_id(e)
+        copies = [b.add_node(label="") for _ in range(7)]
+        for i in range(7):
+            b.add_edge(entrees[i], copies[i])
+        
         xor0 = b.add_node(label="^")
         xor1 = b.add_node(label="^")
         xor2 = b.add_node(label="^")
 
-        b.add_edge(entrees[0], xor0)
-        b.add_edge(entrees[2], xor0)
-        b.add_edge(entrees[4], xor0)
-        b.add_edge(entrees[6], xor0)
+        b.add_edge(copies[0], xor0)
+        b.add_edge(copies[2], xor0)
+        b.add_edge(copies[4], xor0)
+        b.add_edge(copies[6], xor0)
 
-        b.add_edge(entrees[1], xor1)
-        b.add_edge(entrees[2], xor1)
-        b.add_edge(entrees[5], xor1)
-        b.add_edge(entrees[6], xor1)
+        b.add_edge(copies[1], xor1)
+        b.add_edge(copies[2], xor1)
+        b.add_edge(copies[5], xor1)
+        b.add_edge(copies[6], xor1)
 
-        b.add_edge(entrees[3], xor2)
-        b.add_edge(entrees[4], xor2)
-        b.add_edge(entrees[5], xor2)
-        b.add_edge(entrees[6], xor2)
+        b.add_edge(copies[3], xor2)
+        b.add_edge(copies[4], xor2)
+        b.add_edge(copies[5], xor2)
+        b.add_edge(copies[6], xor2)
 
         not0 = b.add_node(label="~")
         b.add_edge(xor0, not0)
@@ -1112,16 +1126,16 @@ class bool_circ(open_digraph):
 
         xors0 = b.add_node(label="^")
         b.add_edge(and0, xors0)
-        b.add_edge(entrees[2], xors0)
+        b.add_edge(copies[2], xors0)
         xors1 = b.add_node(label="^")
         b.add_edge(and2, xors1)
-        b.add_edge(entrees[4], xors1)
+        b.add_edge(copies[4], xors1)
         xors2 = b.add_node(label="^")
         b.add_edge(and1, xors2)
-        b.add_edge(entrees[5], xors2)
+        b.add_edge(copies[5], xors2)
         xors3 = b.add_node(label="^")
         b.add_edge(and3, xors3)
-        b.add_edge(entrees[6], xors3)
+        b.add_edge(copies[6], xors3)
 
         sorties = [b.add_node(label="") for _ in range(4)]
         b.add_edge(xors0, sorties[0])
@@ -1205,8 +1219,8 @@ class bool_circ(open_digraph):
                                 self.add_edge(n_non, enfant_id)
                                 self.remove_edge(id_noeud, enfant_id)
                             if id_noeud in self.outputs_ids():
-                                self.add_output_id(n_non)
-                                self.remove_output_id(id_noeud)
+                                idx = self.outputs.index(id_noeud)
+                                self.outputs[idx] = n_non
                             res = True
                             break
         self.nettoyer_noeuds_morts()
@@ -1237,8 +1251,8 @@ class bool_circ(open_digraph):
                     if id_noeud in self.outputs_ids():
                         n_non_output = self.add_node(label="~")
                         self.add_edge(id_noeud, n_non_output)
-                        self.add_output_id(n_non_output)
-                        self.remove_output_id(id_noeud)
+                        idx = self.outputs.index(id_noeud)
+                        self.outputs[idx] = n_non_output
 
                     res = True
         self.nettoyer_noeuds_morts()
@@ -1254,14 +1268,15 @@ class bool_circ(open_digraph):
                 parent = self.get_node_by_id(p_id)
                 if parent.get_label() == "~" and parent.indegree() == 1:
                     gp_id = list(parent.get_parents().keys())[0]
-                    for enfant_id in list(noeud.get_children().keys()):
-                        self.add_edge(gp_id, enfant_id)
-                        self.remove_edge(id_noeud, enfant_id)
                     if id_noeud in self.outputs_ids():
-                        self.add_output_id(gp_id)
-                        self.remove_output_id(id_noeud)
-                    
-                    self.remove_edge(p_id, id_noeud)
+                        noeud.set_label("")
+                        self.add_edge(gp_id, id_noeud)
+                        self.remove_edge(p_id, id_noeud)
+                    else:
+                        for enfant_id in list(noeud.get_children().keys()):
+                            self.add_edge(gp_id, enfant_id)
+                            self.remove_edge(id_noeud, enfant_id)
+                        self.remove_edge(p_id, id_noeud)
                     res = True
         
         self.nettoyer_noeuds_morts()
@@ -1286,9 +1301,107 @@ class bool_circ(open_digraph):
             )
         self.nettoyer_noeuds_morts()
 
+    def nb_portes(self):
+        """
+        Compte le nombre de portes logiques dans le circuit
+        return: nombre de portes logiques
+        """
+        count = 0
+        for noeud in self.get_id_node_map().values():
+            if noeud.get_label() in ["&", "|", "^", "~"]:
+                count += 1
+        return count
 
+    def optimiser_idempotence(self):
+        """
+        Optimisation : Idempotence
+        Si une porte AND (&) ou OR (|) reçoit plusieurs fois la même entrée, on supprime les arêtes redondantes.
+        """
+      
+        res = False
+        for id_noeud, noeud in list(self.get_id_node_map().items()):
+            if id_noeud not in self.get_id_node_map():
+                continue
+            if noeud.get_label() in ["&", "|"]:
+                for parent_id, multiplicity in list(noeud.get_parents().items()):
+                    if multiplicity > 1:
+                        for _ in range(multiplicity - 1):
+                            self.remove_edge(parent_id, id_noeud)
+                        res = True
+        self.nettoyer_noeuds_morts()
+        return res
 
+    def optimiser_portes_inutiles(self):
+        """
+        Optimisation : portes inutiles
+        Une porte &, | ou ^ qui ne possède qu'une seule arête entrante agit comme un noeud de copie. On relie son parent à ses enfants et on la supprime.
+        """
+        res = False
+        for id_noeud, noeud in list(self.get_id_node_map().items()):
+            if id_noeud not in self.get_id_node_map():
+                continue
+            if noeud.get_label() in ["&", "|", "^"]:
+                if sum(noeud.get_parents().values()) == 1:
+                    p_id = list(noeud.get_parents().keys())[0]
+                    
+                    for enfant_id in list(noeud.get_children().keys()):
+                        self.add_edge(p_id, enfant_id)
+                        self.remove_edge(id_noeud, enfant_id)
+                        
+                    if id_noeud in self.outputs_ids():
+                        self.add_output_id(p_id)
+                        self.remove_output_id(id_noeud)
+                        
+                    res = True
+        self.nettoyer_noeuds_morts()
+        return res
     
+    def optimiser_et_ou_associativite(self):
+        """
+        Optimisation : Associativité des portes AND et OR
+        Si deux portes AND ou OR se suivent on peut les fusionner en une seule pour faire une porte n-aire
+        """
+        res = False
+        for id_noeud, noeud in list(self.get_id_node_map().items()):
+            if id_noeud not in self.get_id_node_map():
+                continue
+            label = noeud.get_label()
+            if label in ["&", "|"]:
+                for p_id in list(noeud.get_parents().keys()):
+                    parent = self.get_node_by_id(p_id)
+                    if parent.get_label() == label:
+                        for gp_id, multiplicite in parent.get_parents().items():
+                            for _ in range(multiplicite):
+                                self.add_edge(gp_id, id_noeud)
+                        multiplicite_parent = noeud.get_parents()[p_id]
+                        for _ in range(multiplicite_parent):
+                            self.remove_edge(p_id, id_noeud)
+                        res = True
+        self.nettoyer_noeuds_morts()
+        return res
+
+
+    def simplifier_optimiser_complet(self):
+        flag = True
+        while flag:
+            flag = (
+                self.simplifier_copie() or
+                self.simplifier_non() or
+                self.simplifier_et() or
+                self.simplifier_ou() or
+                self.simplifier_ou_exclusif() or
+                self.simplifier_neutre() or
+                self.simplifier_xor_involution() or
+                self.simplifier_non_travers_xor() or
+                self.simplifier_xor_associativite() or
+                self.simplifier_copie_associativite() or
+                self.simplifier_non_travers_copie() or
+                self.simplifier_non_involution() or
+                self.optimiser_idempotence() or
+                self.optimiser_portes_inutiles() or
+                self.optimiser_et_ou_associativite()
+            )
+        self.nettoyer_noeuds_morts()
                         
 
         
