@@ -7,7 +7,7 @@ A Python library implementing **Open Directed Multigraphs** (`open_digraph`) and
 ## Repository Structure
 
 ```text
-├── Point-2-Rapport/                  # Project report and theoretical documentation
+├── Point-2-Rapport/                  
 ├── graphes_générés/                  # Exported Graphviz (.dot / .pdf) circuit and graph visualizations
 │   └── ...
 ├── modules/
