@@ -7,14 +7,13 @@ A Python library implementing **Open Directed Multigraphs** (`open_digraph`) and
 ## Repository Structure
 
 ```text
-├── images/
-│   ├── cla_adder4.png                # Visual rendering of the 4-bit Carry-Lookahead Adder
-│   ├── circuit_before_simplif.png    # Boolean circuit before algebraic simplification
-│   └── circuit_after_simplif.png     # Same circuit after `simplifier_optimiser_complet()`
 ├── modules/
 │   ├── open_digraph.py               # Core `node` and `open_digraph` classes (structure, manipulation, validation)
 │   ├── open_digraph_mx.py            # Mixins: Matrix conversions, Graphviz DOT/PDF export, compositions & algorithms
 │   └── bool_circ.py                  # `bool_circ` subclass: Logic gates, adders, Hamming codes, evaluation & optimization
+├── cla_adder4.png                    # Visual rendering of the 4-bit Carry-Lookahead Adder
+├── simplification_before.png         # Boolean circuit before simplification
+├── simplification_after.png          # Same circuit after `simplifier_naif()`
 └── README.md
 ```
 
