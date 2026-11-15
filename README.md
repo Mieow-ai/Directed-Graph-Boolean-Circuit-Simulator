@@ -24,10 +24,10 @@ A Python library implementing **Open Directed Multigraphs** (`open_digraph`) and
 
 All circuit diagrams below are automatically generated from the Python data structures using the Graphviz `.save_as_pdf()` export feature.
 
-### 1. Algebraic Circuit Simplification & Optimization
-Applying `simplifier_optimiser_complet()` reduces gate count and circuit depth through rewriting rules (involution, associativity, `NOT`-pushing, idempotence, and dead-node pruning) while preserving logical equivalence:
+### 1. Circuit Simplification (`simplifier_naif`)
+Applying `simplifier_naif()` reduces gate count and circuit depth through constant propagation, neutral element elimination, copy simplification, and dead-node pruning while preserving logical equivalence:
 
-| Before Simplification | After `simplifier_optimiser_complet()` |
+| Before Simplification | After `simplifier_naif()` |
 | :---: | :---: |
 | ![Circuit Before Simplification](simplification_before.png) | ![Circuit After Simplification](simplification_after.png) |
 
