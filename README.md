@@ -7,12 +7,36 @@ A Python library implementing **Open Directed Multigraphs** (`open_digraph`) and
 ## Repository Structure
 
 ```text
+├── images/
+│   ├── cla_adder4.png                # Visual rendering of the 4-bit Carry-Lookahead Adder
+│   ├── circuit_before_simplif.png    # Boolean circuit before algebraic simplification
+│   └── circuit_after_simplif.png     # Same circuit after `simplifier_optimiser_complet()`
 ├── modules/
-│   ├── open_digraph.py      # Core `node` and `open_digraph` classes (structure, manipulation, validation)
-│   ├── open_digraph_mx.py   # Mixins: Matrix conversions, Graphviz DOT/PDF export, compositions & algorithms
-│   └── bool_circ.py         # `bool_circ` subclass: Logic gates, adders, Hamming codes, evaluation & optimization
+│   ├── open_digraph.py               # Core `node` and `open_digraph` classes (structure, manipulation, validation)
+│   ├── open_digraph_mx.py            # Mixins: Matrix conversions, Graphviz DOT/PDF export, compositions & algorithms
+│   └── bool_circ.py                  # `bool_circ` subclass: Logic gates, adders, Hamming codes, evaluation & optimization
 └── README.md
 ```
+
+---
+
+## Visual Examples
+
+All circuit diagrams below are automatically generated from the Python data structures using the Graphviz `.save_as_pdf()` export feature.
+
+### 1. Algebraic Circuit Simplification & Optimization
+Applying `simplifier_optimiser_complet()` reduces gate count and circuit depth through rewriting rules (involution, associativity, `NOT`-pushing, idempotence, and dead-node pruning) while preserving logical equivalence:
+
+| Before Simplification | After `simplifier_optimiser_complet()` |
+| :---: | :---: |
+| ![Circuit Before Simplification](circuit_before_simplif.png) | ![Circuit After Simplification](circuit_after_simplif.png) |
+
+### 2. Constant-Depth 4-Bit Carry-Lookahead Adder (`cla_adder4`)
+Unlike ripple-carry adders whose depth grows linearly with bit-width, the CLA architecture computes carry propagate ($P_i$) and generate ($G_i$) signals in parallel using $n$-ary gates:
+
+<p align="center">
+  <img src="cla_adder4.png" alt="4-bit Carry-Lookahead Adder" width="75%">
+</p>
 
 ---
 
