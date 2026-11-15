@@ -29,7 +29,7 @@ Applying `simplifier_optimiser_complet()` reduces gate count and circuit depth t
 
 | Before Simplification | After `simplifier_optimiser_complet()` |
 | :---: | :---: |
-| ![Circuit Before Simplification](circuit_before_simplif.png) | ![Circuit After Simplification](circuit_after_simplif.png) |
+| ![Circuit Before Simplification](simplification_before.png) | ![Circuit After Simplification](simplification_after.png) |
 
 ### 2. Constant-Depth 4-Bit Carry-Lookahead Adder (`cla_adder4`)
 Unlike ripple-carry adders whose depth grows linearly with bit-width, the CLA architecture computes carry propagate ($P_i$) and generate ($G_i$) signals in parallel using $n$-ary gates:
